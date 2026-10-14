@@ -10,6 +10,7 @@ namespace {
 
 constexpr float NODE_CARD_X = 780.0f;
 constexpr float NODE_CARD_Y = 440.0f;
+constexpr float SAMPLE_TEXT_X = 600.0f;
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 
@@ -29,7 +30,12 @@ Application::Application() {
     m_ColorShader = std::make_unique<ShaderProgram>(
         "assets/shaders/solid_color.vert",
         "assets/shaders/solid_color.frag");
-    m_TextRenderer = std::make_unique<TextRenderer>("assets/fonts/Roboto-Regular.ttf", 48);
+    m_RobotoMonoTextRenderer = std::make_unique<TextRenderer>(
+        "assets/fonts/RobotoMono-Regular.ttf",
+        48);
+    m_RobotoRegularTextRenderer = std::make_unique<TextRenderer>(
+        "assets/fonts/Roboto-Regular.ttf",
+        48);
     createRectangleRenderer();
 }
 
@@ -68,11 +74,18 @@ void Application::update(float /*deltaTime*/) {
 void Application::render() {
     m_Window->beginRender();
     drawNodeCard();
-    const render::NodeLayout layout = render::makeNodeLayout(NODE_CARD_X, NODE_CARD_Y);
-    m_TextRenderer->draw(
-        "Hello World!",
-        layout.outputSocket.centerX + layout.outputSocket.radius + 32.0f,
-        layout.outputSocket.centerY + 16.0f,
+    m_RobotoMonoTextRenderer->draw(
+        "This is Roboto Mono.",
+        SAMPLE_TEXT_X,
+        760.0f,
+        0.07f,
+        0.10f,
+        0.15f,
+        1.0f);
+    m_RobotoRegularTextRenderer->draw(
+        "This is Roboto Regular.",
+        SAMPLE_TEXT_X,
+        840.0f,
         0.07f,
         0.10f,
         0.15f,

@@ -33,7 +33,8 @@ private:
 
     std::unique_ptr<Window> m_Window;
     std::unique_ptr<ShaderProgram> m_ColorShader;
-    std::unique_ptr<TextRenderer> m_TextRenderer;
+    std::unique_ptr<TextRenderer> m_RobotoMonoTextRenderer;
+    std::unique_ptr<TextRenderer> m_RobotoRegularTextRenderer;
     unsigned int m_RectangleVertexArray = 0;
     unsigned int m_RectangleVertexBuffer = 0;
 };
