@@ -29,12 +29,17 @@ void testCreateAndConnectNodes() {
     require(list.isConsistent(), "connected list is consistent");
 }
 
-void testNullAndDeletedLinks() {
+void testNullLinksAndDeletion() {
     game::model::SinglyLinkedList<int> list;
     const auto first = list.emplaceNode(10);
     const auto second = list.emplaceNode(20);
 
     list.setHead(first);
+    list.setNext(first, second);
+    list.setNext(first, std::nullopt);
+
+    require(!list.node(first).next, "links can be cleared explicitly");
+
     list.setNext(first, second);
     list.eraseNode(second);
 
@@ -51,14 +56,22 @@ void testRejectsUnknownNodes() {
     game::model::SinglyLinkedList<int> list;
     const auto first = list.emplaceNode(10);
 
-    bool rejected = false;
+    bool rejectedDestination = false;
     try {
         list.setNext(first, game::model::NodeId{999});
     } catch (const std::out_of_range&) {
-        rejected = true;
+        rejectedDestination = true;
     }
 
-    require(rejected, "links to unknown nodes are rejected");
+    bool rejectedSource = false;
+    try {
+        list.setNext(game::model::NodeId{999}, first);
+    } catch (const std::out_of_range&) {
+        rejectedSource = true;
+    }
+
+    require(rejectedDestination, "links to unknown destination nodes are rejected");
+    require(rejectedSource, "links from unknown source nodes are rejected");
     require(list.isConsistent(), "failed edits leave the list consistent");
 }
 
@@ -73,7 +86,7 @@ void testSupportsUnicodePayloads() {
 
 int main() {
     testCreateAndConnectNodes();
-    testNullAndDeletedLinks();
+    testNullLinksAndDeletion();
     testRejectsUnknownNodes();
     testSupportsUnicodePayloads();
 }
