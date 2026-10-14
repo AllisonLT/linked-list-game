@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linked List Game - Detailed Development Roadmap</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #10151f;
+      --surface: #1a2230;
+      --surface-border: #2d3b50;
+      --text: #ecf2fb;
+      --muted: #aab7ca;
+      --accent: #65d5ae;
+      --accent-dark: #183e37;
+      --warning: #ffcd70;
+      --code: #101923;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(1000px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+
+    header {
+      max-width: 760px;
+      margin-bottom: 36px;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 12px;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      font-size: 1.35rem;
+    }
+
+    h3 {
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    p,
+    li {
+      color: var(--muted);
+    }
+
+    code {
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      background: var(--code);
+      color: var(--text);
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.9em;
+    }
+
+    .tag,
+    .milestone-id {
+      display: inline-block;
+      border-radius: 999px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .tag {
+      margin-bottom: 14px;
+      padding: 4px 10px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+
+    .overview,
+    .milestone,
+    .next-up {
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+
+    .overview {
+      margin-bottom: 32px;
+      padding: 20px 24px;
+    }
+
+    .overview ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .overview a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .roadmap {
+      display: grid;
+      gap: 22px;
+    }
+
+    .milestone {
+      padding: 26px;
+      scroll-margin-top: 24px;
+    }
+
+    .milestone-header {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .milestone-header h2 {
+      margin: 0;
+    }
+
+    .milestone-id {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      background: var(--accent-dark);
+      color: var(--accent);
+      font-size: 0.75rem;
+    }
+
+    .goal {
+      margin-bottom: 22px;
+      color: var(--text);
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      counter-reset: step;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .steps > li {
+      position: relative;
+      min-height: 42px;
+      padding: 12px 14px 12px 58px;
+      border: 1px solid var(--surface-border);
+      border-radius: 9px;
+      background: #151d29;
+    }
+
+    .steps > li::before {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 50%;
+      background: #27364a;
+      color: var(--text);
+      content: counter(step);
+      counter-increment: step;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .steps strong {
+      color: var(--text);
+    }
+
+    .done {
+      margin: 22px 0 0;
+      padding: 12px 14px;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      background: #152925;
+      color: var(--text);
+    }
+
+    .done strong {
+      color: var(--accent);
+    }
+
+    .next-up {
+      margin-top: 32px;
+      padding: 22px 24px;
+    }
+
+    .next-up h2 {
+      color: var(--warning);
+    }
+
+    @media (max-width: 600px) {
+      main {
+        padding-top: 36px;
+      }
+
+      .milestone {
+        padding: 20px;
+      }
+
+      .milestone-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="tag">Detailed development roadmap</span>
+      <h1>Linked List Game</h1>
+      <p>
+        Complete one small task at a time. Each milestone leaves the project in a
+        working state and has a concrete finish line before the next one begins.
+      </p>
+    </header>
+
+    <nav class="overview" aria-label="Milestone overview">
+      <h2>Milestones</h2>
+      <ol>
+        <li><a href="#m01">M01 - Application shell</a></li>
+        <li><a href="#m02">M02 - Singly linked-list model</a></li>
+        <li><a href="#m03">M03 - Static diagram rendering</a></li>
+        <li><a href="#m04">M04 - Draggable nodes</a></li>
+        <li><a href="#m05">M05 - Pointer rewiring</a></li>
+        <li><a href="#m06">M06 - Sandbox tools</a></li>
+        <li><a href="#m07">M07 - First learning level</a></li>
+        <li><a href="#m08">M08 - Expand from a stable core</a></li>
+      </ol>
+    </nav>
+
+    <section class="roadmap">
+      <article class="milestone" id="m01">
+        <div class="milestone-header">
+          <span class="milestone-id">M01</span>
+          <h2>Application shell</h2>
+        </div>
+        <p class="goal">Create a reliable OpenGL window and one shared coordinate system.</p>
+        <ol class="steps">
+          <li><strong>Build the empty executable.</strong> Confirm CMake can configure and compile GLFW, GLAD, and the game target.</li>
+          <li><strong>Move GLFW lifecycle code into <code>Window</code>.</strong> Initialize GLFW, create the window, initialize GLAD, and clean up in one owner.</li>
+          <li><strong>Introduce <code>Application</code>.</strong> Give it the main loop: poll events, process input, update, render, and swap buffers.</li>
+          <li><strong>Add a fixed virtual canvas.</strong> Define a 1920x1080 logical coordinate space independent of the physical window size.</li>
+          <li><strong>Letterbox the canvas.</strong> Preserve the 16:9 canvas aspect ratio when the player resizes the window.</li>
+          <li><strong>Add input state.</strong> Track mouse position, mouse buttons, keyboard buttons, and one-frame just-pressed transitions.</li>
+          <li><strong>Convert physical mouse coordinates.</strong> Map the mouse to virtual canvas coordinates and mark whether it is inside the canvas.</li>
+          <li><strong>Expose a visible diagnostic.</strong> Show the logical mouse position in the title bar and log click coordinates during development.</li>
+          <li><strong>Handle startup failures.</strong> Report failed GLFW, window, or GLAD initialization clearly and exit nonzero.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> the executable opens, resizes with letterboxing, and reports correct 1920x1080 canvas coordinates.</p>
+      </article>
+
+      <article class="milestone" id="m02">
+        <div class="milestone-header">
+          <span class="milestone-id">M02</span>
+          <h2>Singly linked-list model</h2>
+        </div>
+        <p class="goal">Build a graphics-free, testable data model that safely represents pointer relationships.</p>
+        <ol class="steps">
+          <li><strong>Create a stable <code>NodeId</code>.</strong> Use an integer handle distinct from a raw memory address.</li>
+          <li><strong>Define <code>SinglyLinkedList&lt;T&gt;::Node</code>.</strong> Store an ID, a generic value, and an optional <code>next</code> ID.</li>
+          <li><strong>Own nodes inside the list.</strong> Store nodes in a container such as <code>std::unordered_map</code>; do not give the renderer ownership.</li>
+          <li><strong>Add <code>emplaceNode</code>.</strong> Allocate an unused ID, construct the payload, and initially set <code>next</code> to null.</li>
+          <li><strong>Add read-only node access.</strong> Allow gameplay and rendering code to inspect a node by ID while preventing accidental direct rewiring.</li>
+          <li><strong>Add head management.</strong> Set or clear the head only after checking that a non-null ID exists.</li>
+          <li><strong>Add pointer rewiring.</strong> Set a node's <code>next</code> to an existing node or null; reject unknown source and destination IDs.</li>
+          <li><strong>Define deletion behavior.</strong> When a node is deleted, clear incoming links and clear the head if it references that node.</li>
+          <li><strong>Add consistency checking.</strong> Verify that head and every non-null <code>next</code> reference a stored node.</li>
+          <li><strong>Write unit tests.</strong> Cover creation, links, null links, deletion, rejected invalid IDs, and a non-integer payload.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> the list model passes tests without opening an OpenGL window.</p>
+      </article>
+
+      <article class="milestone" id="m03">
+        <div class="milestone-header">
+          <span class="milestone-id">M03</span>
+          <h2>Static diagram rendering</h2>
+        </div>
+        <p class="goal">Draw a hard-coded list clearly before attempting any interaction.</p>
+        <ol class="steps">
+          <li><strong>Add a shader wrapper.</strong> Load, compile, link, and report errors for a small colored-primitive shader.</li>
+          <li><strong>Render one rectangle.</strong> Draw a colored rectangle at a virtual-canvas position with a width and height.</li>
+          <li><strong>Define a visual node layout.</strong> Reserve regions for the value, the <code>next</code> label, and the output socket.</li>
+          <li><strong>Draw a node card.</strong> Use rectangles, borders, and simple colors to distinguish node regions.</li>
+          <li><strong>Add text rendering.</strong> Load one font and draw node values, labels, and short status text.</li>
+          <li><strong>Draw a directional pointer line.</strong> Connect one source socket to one destination socket and add an arrowhead.</li>
+          <li><strong>Draw a null endpoint.</strong> Represent a missing pointer with a short line and a visible <code>nullptr</code> label.</li>
+          <li><strong>Render a fixed three-node example.</strong> Show head, nodes A/B/C, two links, and C's null endpoint.</li>
+          <li><strong>Test different positions.</strong> Move the hard-coded cards to ensure links remain readable at varied distances.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> someone can identify the list order, head, and null endpoint from the picture alone.</p>
+      </article>
+
+      <article class="milestone" id="m04">
+        <div class="milestone-header">
+          <span class="milestone-id">M04</span>
+          <h2>Draggable nodes</h2>
+        </div>
+        <p class="goal">Let the player rearrange the diagram without changing list data.</p>
+        <ol class="steps">
+          <li><strong>Create a view-state record.</strong> Store each node's card position separately from the linked-list model.</li>
+          <li><strong>Implement card hit testing.</strong> Determine whether a logical mouse point falls inside a node card rectangle.</li>
+          <li><strong>Choose the topmost card.</strong> If cards overlap, select the card most recently brought to the front.</li>
+          <li><strong>Begin a drag.</strong> On left-button press over a card, remember the selected ID and mouse-to-card offset.</li>
+          <li><strong>Update the drag.</strong> While the button is held, update only the visual position using the stored offset.</li>
+          <li><strong>End the drag.</strong> On release, clear drag state and retain the final position.</li>
+          <li><strong>Provide visual feedback.</strong> Highlight the selected card and keep its links rendered while it moves.</li>
+          <li><strong>Keep cards visible.</strong> Clamp or otherwise recover a card that would be dropped entirely outside the canvas.</li>
+          <li><strong>Manually test overlap and resizing.</strong> Verify dragging works after the window is resized and when cards touch.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> nodes can be moved freely while all existing pointer lines remain attached to their sockets.</p>
+      </article>
+
+      <article class="milestone" id="m05">
+        <div class="milestone-header">
+          <span class="milestone-id">M05</span>
+          <h2>Pointer rewiring</h2>
+        </div>
+        <p class="goal">Make pointer editing the central, direct manipulation mechanic.</p>
+        <ol class="steps">
+          <li><strong>Define socket geometry.</strong> Give every <code>next</code> output a hit area and every node an input target area.</li>
+          <li><strong>Hit-test the output socket.</strong> Start a link drag only when the player presses a valid pointer output.</li>
+          <li><strong>Store link-drag state.</strong> Remember the source node and current mouse position until release or cancellation.</li>
+          <li><strong>Draw a preview line.</strong> Render a temporary line from the source socket to the cursor while dragging.</li>
+          <li><strong>Find an eligible target.</strong> Highlight a node input when the cursor is above it; allow self-links only if the level permits cycles.</li>
+          <li><strong>Commit a valid drop.</strong> On release over a target, call <code>setNext</code> and redraw the persistent link.</li>
+          <li><strong>Support setting null.</strong> On release over empty canvas, set the source <code>next</code> to null.</li>
+          <li><strong>Reject invalid drops visibly.</strong> Keep the old link unchanged and show a brief reason for a disallowed action.</li>
+          <li><strong>Add undo data.</strong> Save the source node's prior pointer before every successful rewire.</li>
+          <li><strong>Test common rewires.</strong> Verify <code>A → B → C</code> can become <code>A → C</code>, <code>A → nullptr</code>, and a cycle when enabled.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> a player can deliberately create, replace, and clear <code>next</code> links with the mouse.</p>
+      </article>
+
+      <article class="milestone" id="m06">
+        <div class="milestone-header">
+          <span class="milestone-id">M06</span>
+          <h2>Sandbox tools</h2>
+        </div>
+        <p class="goal">Offer an experiment space where players can build and inspect lists safely.</p>
+        <ol class="steps">
+          <li><strong>Add a compact tool panel.</strong> Reserve a predictable area for create, delete, reset, undo, and status controls.</li>
+          <li><strong>Add node creation.</strong> Create a node with a default value and place its card at a non-overlapping canvas position.</li>
+          <li><strong>Add selected-node deletion.</strong> Delete a card only after the player selects it; update the model and view state together.</li>
+          <li><strong>Make reset deterministic.</strong> Restore the same small example list and positions every time.</li>
+          <li><strong>Implement one-step undo.</strong> Start with pointer rewires, then add node creation and deletion only after their state snapshots are reliable.</li>
+          <li><strong>Display structural status.</strong> Show head, stored node count, reachable-node count, and whether a cycle is detected.</li>
+          <li><strong>Explain invalid structure.</strong> Flag unreachable nodes or a missing head without silently repairing the player's work.</li>
+          <li><strong>Try destructive cases.</strong> Delete the head, delete a middle node, clear links, and create a cycle; confirm the UI remains stable.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> a player can freely construct, inspect, break, undo, and reset small singly linked lists.</p>
+      </article>
+
+      <article class="milestone" id="m07">
+        <div class="milestone-header">
+          <span class="milestone-id">M07</span>
+          <h2>First learning level: insertion</h2>
+        </div>
+        <p class="goal">Turn the sandbox interaction into one guided lesson about a real list operation.</p>
+        <ol class="steps">
+          <li><strong>Define a level data shape.</strong> Include starting nodes, links, positions, instructions, target graph, and allowed actions.</li>
+          <li><strong>Create one fixed scenario.</strong> Use a three-node singly linked list and one new node to insert after position <code>k</code>.</li>
+          <li><strong>Explain the goal before editing.</strong> State which node should be inserted and where the final link order should end.</li>
+          <li><strong>Ask the boundary question.</strong> Prompt for the valid range of <code>k</code> before the player can change pointers.</li>
+          <li><strong>Validate the answer.</strong> Explain why the first and last valid positions are special; allow a retry after a wrong answer.</li>
+          <li><strong>Guide the pointer order.</strong> Prompt the player to preserve access to the old successor before overwriting a link.</li>
+          <li><strong>Compare the final graph.</strong> Check head, values, and every expected <code>next</code> relationship rather than relying on card positions.</li>
+          <li><strong>Give specific feedback.</strong> Identify the pointer that differs and explain what list segment was disconnected or miswired.</li>
+          <li><strong>Add level restart.</strong> Return to the starting graph and initial card layout with one action.</li>
+          <li><strong>Playtest with a beginner.</strong> Record where they hesitate; simplify wording or feedback before adding another operation.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> a newcomer can complete one insertion task and articulate why the valid index range matters.</p>
+      </article>
+
+      <article class="milestone" id="m08">
+        <div class="milestone-header">
+          <span class="milestone-id">M08</span>
+          <h2>Expand from a stable core</h2>
+        </div>
+        <p class="goal">Add scope only when it reuses the established model, interaction, and lesson framework.</p>
+        <ol class="steps">
+          <li><strong>Review the first level.</strong> Fix unclear controls, bugs, and confusing feedback before introducing new structures.</li>
+          <li><strong>Add one operation at a time.</strong> Prefer traversal, deletion, or reversal as the next focused lesson.</li>
+          <li><strong>Introduce temporary pointer labels.</strong> Add visual labels such as <code>curr</code>, <code>prev</code>, <code>slow</code>, and <code>fast</code>.</li>
+          <li><strong>Add a doubly linked-list model.</strong> Create a dedicated model with <code>prev</code> and <code>next</code>, plus tests for bidirectional invariants.</li>
+          <li><strong>Reuse pointer interaction.</strong> Extend socket definitions instead of creating a separate drag system for every pointer type.</li>
+          <li><strong>Extract level definitions.</strong> Move fixed level data from C++ into versioned data files only after the schema has stabilized.</li>
+          <li><strong>Add advanced graph-like structures carefully.</strong> Support right/down or other slots after single and doubly linked-list lessons are solid.</li>
+          <li><strong>Add polish last.</strong> Improve animation, sounds, themes, accessibility, and scoring only after interactions are trustworthy.</li>
+          <li><strong>Package a release build.</strong> Test the executable on a machine without the development environment before sharing it.</li>
+        </ol>
+        <p class="done"><strong>Finish line:</strong> every new lesson or data structure extends a proven core instead of bypassing it.</p>
+      </article>
+    </section>
+
+    <section class="next-up" aria-labelledby="next-up-title">
+      <h2 id="next-up-title">Current focus</h2>
+      <p>
+        M01 and the basic M02 model are complete. Next, expand M02 only if more
+        model behavior is needed; otherwise begin M03 with one rectangle and a
+        minimal colored-primitive shader.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
