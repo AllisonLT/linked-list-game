@@ -15,11 +15,10 @@ linked-list-game/
 │   │   └── src/glad.c
 │   └── stb/
 ├── include/
-│   └── game/
-│       ├── core/               # Application, Window, Input state
-│       ├── model/              # Pure data: Node, LinkedListGraph, PointerSlot
-│       ├── render/             # Shaders, BatchRenderer, Camera2D, FontRenderer
-│       └── physics/            # Chain springs, socket snap detection, drag logic
+│   ├── core/               # Application, Window, Input state
+│   ├── model/              # Pure data: Node, LinkedListGraph, PointerSlot
+│   ├── render/             # Shaders, BatchRenderer, Camera2D, FontRenderer
+│   └── physics/            # Chain springs, socket snap detection, drag logic
 ├── src/
 │   ├── main.cpp
 │   ├── core/
