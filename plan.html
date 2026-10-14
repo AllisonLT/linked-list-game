@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linked List Game Development Plan</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #10151f;
+      --surface: #1a2230;
+      --surface-border: #2d3b50;
+      --text: #ecf2fb;
+      --muted: #aab7ca;
+      --accent: #65d5ae;
+      --accent-dark: #183e37;
+      --warning: #ffcd70;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+
+    header {
+      max-width: 720px;
+      margin-bottom: 44px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 12px;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      font-size: 1.3rem;
+    }
+
+    h3 {
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+
+    .intro,
+    .step-summary,
+    .meta,
+    li {
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 4px 10px;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .principles,
+    .milestone,
+    .next-session {
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+
+    .principles {
+      margin-bottom: 36px;
+      padding: 22px 24px;
+    }
+
+    .principles ul,
+    .milestone ul {
+      margin-bottom: 0;
+      padding-left: 20px;
+    }
+
+    .roadmap {
+      display: grid;
+      gap: 18px;
+    }
+
+    .milestone {
+      position: relative;
+      padding: 24px 24px 24px 92px;
+    }
+
+    .number {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      display: grid;
+      width: 46px;
+      height: 46px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-dark);
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .meta {
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+
+    .done {
+      margin: 18px 0 0;
+      padding: 12px 14px;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      background: #152925;
+      color: var(--text);
+    }
+
+    .done strong {
+      color: var(--accent);
+    }
+
+    .next-session {
+      margin-top: 36px;
+      padding: 24px;
+    }
+
+    .next-session h2 {
+      color: var(--warning);
+    }
+
+    @media (max-width: 600px) {
+      main {
+        padding-top: 36px;
+      }
+
+      .milestone {
+        padding: 78px 20px 20px;
+      }
+
+      .number {
+        top: 20px;
+        left: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="tag">Development roadmap</span>
+      <h1>Linked List Game</h1>
+      <p class="intro">
+        Build a small, satisfying interactive diagram first. Add lessons only after
+        moving nodes and rewiring pointers feels clear and reliable.
+      </p>
+    </header>
+
+    <section class="principles" aria-labelledby="principles-title">
+      <h2 id="principles-title">Guiding principles</h2>
+      <ul>
+        <li>Keep list rules separate from drawing and mouse interaction.</li>
+        <li>Finish one playable vertical slice before adding more data structures or levels.</li>
+        <li>Make invalid states visible and explainable instead of silently preventing them.</li>
+        <li>Prefer simple pointer lines and readable labels over visual effects for now.</li>
+      </ul>
+    </section>
+
+    <section class="roadmap" aria-label="Development milestones">
+      <article class="milestone">
+        <span class="number">01</span>
+        <h2>Stabilize the application shell</h2>
+        <p class="step-summary">Turn the current blank OpenGL window into a dependable place to build.</p>
+        <p class="meta">Focus: window, input, project organization</p>
+        <ul>
+          <li>Create small <code>Application</code>, <code>Window</code>, and <code>Input</code> modules.</li>
+          <li>Track window size, mouse position, mouse buttons, and Escape-to-quit.</li>
+          <li>Set up a basic 2D coordinate system so UI positions are expressed in pixels.</li>
+          <li>Choose folders for model, rendering, and interaction code.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> the window resizes correctly and displays the live mouse coordinates.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">02</span>
+        <h2>Model a linked list without graphics</h2>
+        <p class="step-summary">Build the rules that the visual game will represent.</p>
+        <p class="meta">Focus: pure C++ data model and tests</p>
+        <ul>
+          <li>Define a stable node ID, a value, and optional <code>next</code> and <code>prev</code> links.</li>
+          <li>Create a graph/list model that can add nodes, remove nodes, connect pointers, and disconnect pointers.</li>
+          <li>Validate invariants: valid IDs, one outgoing link per pointer slot, and no accidental dangling references.</li>
+          <li>Write unit tests for every edit operation and edge case.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> list edits can be tested entirely without creating an OpenGL window.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">03</span>
+        <h2>Draw a static linked-list diagram</h2>
+        <p class="step-summary">Make a fixed list understandable at a glance.</p>
+        <p class="meta">Focus: 2D shapes, text, and pointer lines</p>
+        <ul>
+          <li>Render node cards containing a value area and labeled <code>next</code> / <code>prev</code> socket areas.</li>
+          <li>Draw directional lines between sockets, with arrowheads to show pointer direction.</li>
+          <li>Draw an explicit <code>nullptr</code> label for empty pointers.</li>
+          <li>Add labels for head, tail, and temporary algorithm pointers.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> a hard-coded three-node list is legible without any instructions.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">04</span>
+        <h2>Make nodes movable</h2>
+        <p class="step-summary">Let players arrange the diagram while preserving the list structure.</p>
+        <p class="meta">Focus: hit testing and drag interaction</p>
+        <ul>
+          <li>Store a visual position for every node separately from its list data.</li>
+          <li>Detect which node card is under the mouse.</li>
+          <li>Drag a card while the mouse button is held and keep its pointer lines attached.</li>
+          <li>Clearly highlight the card currently being dragged.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> every node can be repositioned and all links follow it smoothly.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">05</span>
+        <h2>Implement manual pointer rewiring</h2>
+        <p class="step-summary">This is the core game mechanic: players create and break links themselves.</p>
+        <p class="meta">Focus: sockets, previews, and safe edits</p>
+        <ul>
+          <li>Begin a link drag from a node's pointer output socket.</li>
+          <li>Show a temporary line from the source socket to the mouse.</li>
+          <li>Highlight compatible destination sockets while dragging.</li>
+          <li>Commit the model change only after a valid drop; allow dropping away from a node to set the pointer to <code>nullptr</code>.</li>
+          <li>Give clear visual feedback for invalid drops.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> the player can turn <code>A → B → C</code> into <code>A → C</code> through direct manipulation.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">06</span>
+        <h2>Add a small sandbox</h2>
+        <p class="step-summary">Provide a safe place to experiment before turning the interaction into lessons.</p>
+        <p class="meta">Focus: player tools and feedback</p>
+        <ul>
+          <li>Add controls to create a node, delete a node, and reset the scene.</li>
+          <li>Display the current head and list length.</li>
+          <li>Show helpful errors, such as a disconnected head or an unreachable node.</li>
+          <li>Support undo for the latest pointer or node edit.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> a player can build, break, inspect, and reset small lists without restarting the application.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">07</span>
+        <h2>Create the first teaching level</h2>
+        <p class="step-summary">Teach one operation, not all operations at once.</p>
+        <p class="meta">Focus: guided insertion</p>
+        <ul>
+          <li>Present a starting singly linked list and a target outcome.</li>
+          <li>Ask the player to insert a node after a chosen position.</li>
+          <li>Prompt for the valid range of <code>k</code> before edits begin.</li>
+          <li>Check the final graph against the target and explain mistakes in terms of pointers and edge cases.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> someone unfamiliar with the code can complete one insertion puzzle and understand why the boundary range matters.</p>
+      </article>
+
+      <article class="milestone">
+        <span class="number">08</span>
+        <h2>Expand deliberately</h2>
+        <p class="step-summary">Only add scope after the first lesson is fun, stable, and understandable.</p>
+        <p class="meta">Possible next features</p>
+        <ul>
+          <li>Traversal, deletion, reversal, and cycle-detection lessons.</li>
+          <li>Doubly linked lists and temporary pointers such as <code>slow</code> and <code>fast</code>.</li>
+          <li>Level definitions loaded from files instead of compiled into C++.</li>
+          <li>Polish: animations, sound, themes, node skins, and challenge scoring.</li>
+        </ul>
+        <p class="done"><strong>Done when:</strong> each new feature reinforces the same core interaction instead of introducing a separate system.</p>
+      </article>
+    </section>
+
+    <section class="next-session" aria-labelledby="next-session-title">
+      <h2 id="next-session-title">Recommended next session</h2>
+      <p>
+        Start milestone 1. Keep the goal narrow: refactor <code>main.cpp</code> just
+        enough to expose window state and mouse input, then render the current mouse
+        position on screen. Do not build nodes, levels, or animations yet.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
