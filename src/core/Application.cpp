@@ -1,15 +1,17 @@
 #include "core/Application.hpp"
 #include "core/Input.hpp"
+#include <cmath>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 namespace game::core {
 namespace {
 
-constexpr float RECTANGLE_X = 680.0f;
-constexpr float RECTANGLE_Y = 390.0f;
-constexpr float RECTANGLE_WIDTH = 560.0f;
-constexpr float RECTANGLE_HEIGHT = 300.0f;
+constexpr float NODE_CARD_X = 780.0f;
+constexpr float NODE_CARD_Y = 440.0f;
+constexpr int CIRCLE_SEGMENTS = 24;
+constexpr float PI = 3.14159265358979323846f;
 
 constexpr float toNormalizedDeviceX(float canvasX) {
     return (canvasX / Window::TARGET_WIDTH) * 2.0f - 1.0f;
@@ -27,7 +29,7 @@ Application::Application() {
     m_ColorShader = std::make_unique<ShaderProgram>(
         "assets/shaders/solid_color.vert",
         "assets/shaders/solid_color.frag");
-    createRectangle();
+    createRectangleRenderer();
 }
 
 Application::~Application() {
@@ -64,15 +66,69 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
-    drawRectangle();
+    drawNodeCard();
     m_Window->endRender();
 }
 
-void Application::createRectangle() {
-    const float left = toNormalizedDeviceX(RECTANGLE_X);
-    const float right = toNormalizedDeviceX(RECTANGLE_X + RECTANGLE_WIDTH);
-    const float top = toNormalizedDeviceY(RECTANGLE_Y);
-    const float bottom = toNormalizedDeviceY(RECTANGLE_Y + RECTANGLE_HEIGHT);
+void Application::createRectangleRenderer() {
+    glGenVertexArrays(1, &m_RectangleVertexArray);
+    glGenBuffers(1, &m_RectangleVertexBuffer);
+
+    glBindVertexArray(m_RectangleVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Application::drawNodeCard() const {
+    constexpr Color nodeColor{0.07f, 0.10f, 0.15f};
+
+    const render::NodeLayout layout = render::makeNodeLayout(NODE_CARD_X, NODE_CARD_Y);
+    drawRectangle(layout.card, nodeColor);
+    drawCircle(
+        layout.outputSocket.centerX,
+        layout.outputSocket.centerY,
+        layout.outputSocket.radius,
+        nodeColor);
+}
+
+void Application::drawCircle(float centerX, float centerY, float radius, const Color& color) const {
+    std::vector<float> vertices;
+    vertices.reserve((CIRCLE_SEGMENTS + 2) * 2);
+    vertices.push_back(toNormalizedDeviceX(centerX));
+    vertices.push_back(toNormalizedDeviceY(centerY));
+
+    for (int segment = 0; segment <= CIRCLE_SEGMENTS; ++segment) {
+        const float angle = (static_cast<float>(segment) / CIRCLE_SEGMENTS) * 2.0f * PI;
+        const float x = centerX + std::cos(angle) * radius;
+        const float y = centerY + std::sin(angle) * radius;
+        vertices.push_back(toNormalizedDeviceX(x));
+        vertices.push_back(toNormalizedDeviceY(y));
+    }
+
+    m_ColorShader->use();
+    m_ColorShader->setColor(color.red, color.green, color.blue, color.alpha);
+    glBindVertexArray(m_RectangleVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
+        vertices.data(),
+        GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, static_cast<GLsizei>(vertices.size() / 2));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Application::drawRectangle(const render::Rectangle& rectangle, const Color& color) const {
+    const float left = toNormalizedDeviceX(rectangle.x);
+    const float right = toNormalizedDeviceX(rectangle.x + rectangle.width);
+    const float top = toNormalizedDeviceY(rectangle.y);
+    const float bottom = toNormalizedDeviceY(rectangle.y + rectangle.height);
 
     const float vertices[] = {
         left, top,
@@ -83,24 +139,13 @@ void Application::createRectangle() {
         left, bottom,
     };
 
-    glGenVertexArrays(1, &m_RectangleVertexArray);
-    glGenBuffers(1, &m_RectangleVertexBuffer);
-
+    m_ColorShader->use();
+    m_ColorShader->setColor(color.red, color.green, color.blue, color.alpha);
     glBindVertexArray(m_RectangleVertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-void Application::drawRectangle() const {
-    m_ColorShader->use();
-    m_ColorShader->setColor(0.20f, 0.62f, 0.91f, 1.0f);
-    glBindVertexArray(m_RectangleVertexArray);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 

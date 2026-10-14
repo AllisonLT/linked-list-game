@@ -30,8 +30,8 @@ inline NodeLayout makeNodeLayout(float x, float y) {
     constexpr float valueHeight = 88.0f;
     constexpr float labelY = 140.0f;
     constexpr float labelWidth = 116.0f;
-    constexpr float socketY = 164.0f;
-    constexpr float socketRadius = 14.0f;
+    constexpr float socketY = NODE_CARD_HEIGHT / 2.0f;
+    constexpr float socketRadius = 32.0f;
 
     return {
         .card = {x, y, NODE_CARD_WIDTH, NODE_CARD_HEIGHT},
