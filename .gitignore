@@ -22,3 +22,6 @@ Makefile
 .idea/
 .DS_Store
 Thumbs.db
+
+# Personal logging
+*ideas/
