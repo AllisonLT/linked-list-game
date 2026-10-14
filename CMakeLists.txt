@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # We enable C and CXX because glad.c is a C file, while our code is C++
 project(LinkedListGame VERSION 0.1.0 LANGUAGES C CXX)
+include(CTest)
 
 # Target modern C++20
 set(CMAKE_CXX_STANDARD 20)
@@ -84,6 +85,12 @@ if(MINGW)
         -static-libgcc
         -static-libstdc++
     )
+endif()
+
+if(BUILD_TESTING)
+    add_executable(SinglyLinkedListTests test/SinglyLinkedListTests.cpp)
+    target_include_directories(SinglyLinkedListTests PRIVATE include)
+    add_test(NAME SinglyLinkedListTests COMMAND SinglyLinkedListTests)
 endif()
 
 # Copy assets folder into the build folder after each compilation

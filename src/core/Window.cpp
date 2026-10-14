@@ -1,4 +1,4 @@
-#include "game/core/Window.hpp"
+#include "core/Window.hpp"
 #include <iostream>
 #include <stdexcept>
 

@@ -1,5 +1,5 @@
-#include "game/core/Application.hpp"
-#include "game/core/Input.hpp"
+#include "core/Application.hpp"
+#include "core/Input.hpp"
 #include <iostream>
 #include <sstream>
 

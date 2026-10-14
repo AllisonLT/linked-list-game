@@ -1,5 +1,5 @@
-#include "game/core/Input.hpp"
-#include "game/core/Window.hpp"
+#include "core/Input.hpp"
+#include "core/Window.hpp"
 #include <algorithm>
 
 namespace game::core {

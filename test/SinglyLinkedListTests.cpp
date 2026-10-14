@@ -1,0 +1,79 @@
+#include "model/SinglyLinkedList.hpp"
+
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+namespace {
+
+void require(bool condition, const char* message) {
+    if (!condition) {
+        std::cerr << "Test failed: " << message << '\n';
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+void testCreateAndConnectNodes() {
+    game::model::SinglyLinkedList<int> list;
+    const auto first = list.emplaceNode(10);
+    const auto second = list.emplaceNode(20);
+
+    list.setHead(first);
+    list.setNext(first, second);
+
+    require(list.size() == 2, "two nodes are stored");
+    require(list.head() == first, "head points to the first node");
+    require(list.node(first).value == 10, "first node preserves its value");
+    require(list.node(first).next == second, "first node points to second node");
+    require(list.isConsistent(), "connected list is consistent");
+}
+
+void testNullAndDeletedLinks() {
+    game::model::SinglyLinkedList<int> list;
+    const auto first = list.emplaceNode(10);
+    const auto second = list.emplaceNode(20);
+
+    list.setHead(first);
+    list.setNext(first, second);
+    list.eraseNode(second);
+
+    require(!list.node(first).next, "incoming links are cleared when a node is deleted");
+    require(list.head() == first, "unrelated head is retained");
+    require(list.isConsistent(), "deletion cannot leave dangling IDs");
+
+    list.eraseNode(first);
+    require(!list.head(), "deleting the head clears the head");
+    require(list.empty(), "all nodes are deleted");
+}
+
+void testRejectsUnknownNodes() {
+    game::model::SinglyLinkedList<int> list;
+    const auto first = list.emplaceNode(10);
+
+    bool rejected = false;
+    try {
+        list.setNext(first, game::model::NodeId{999});
+    } catch (const std::out_of_range&) {
+        rejected = true;
+    }
+
+    require(rejected, "links to unknown nodes are rejected");
+    require(list.isConsistent(), "failed edits leave the list consistent");
+}
+
+void testSupportsUnicodePayloads() {
+    game::model::SinglyLinkedList<std::u32string> list;
+    const auto node = list.emplaceNode(U"\U0001F680");
+
+    require(list.node(node).value == U"\U0001F680", "generic node values preserve Unicode data");
+}
+
+} // namespace
+
+int main() {
+    testCreateAndConnectNodes();
+    testNullAndDeletedLinks();
+    testRejectsUnknownNodes();
+    testSupportsUnicodePayloads();
+}

@@ -1,4 +1,4 @@
-#include "game/core/Application.hpp"
+#include "core/Application.hpp"
 #include <exception>
 #include <iostream>
 
