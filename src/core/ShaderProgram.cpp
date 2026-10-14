@@ -98,6 +98,11 @@ void ShaderProgram::setColor(float red, float green, float blue, float alpha) co
     glUniform4f(colorLocation, red, green, blue, alpha);
 }
 
+void ShaderProgram::setInteger(const char* name, int value) const {
+    const GLint location = glGetUniformLocation(m_Program, name);
+    glUniform1i(location, value);
+}
+
 GLuint ShaderProgram::compileShader(GLenum type, const std::filesystem::path& path) {
     const std::string source = readShaderSource(path);
     const char* sourcePointer = source.c_str();

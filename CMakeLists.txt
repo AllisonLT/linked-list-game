@@ -41,6 +41,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+message(STATUS "Fetching FreeType...")
+FetchContent_Declare(
+    freetype
+    GIT_REPOSITORY https://github.com/freetype/freetype.git
+    GIT_TAG VER-2-13-3
+)
+FetchContent_MakeAvailable(freetype)
+
 # ---------------------------------------------------------------------------
 # 2. Local GLAD Loader (compiled as a static C library)
 # ---------------------------------------------------------------------------
@@ -72,6 +80,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glad
     glfw
     glm::glm
+    freetype
     opengl32
 )
 

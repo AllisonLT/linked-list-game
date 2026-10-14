@@ -16,6 +16,7 @@ public:
 
     void use() const;
     void setColor(float red, float green, float blue, float alpha) const;
+    void setInteger(const char* name, int value) const;
 
 private:
     static GLuint compileShader(GLenum type, const std::filesystem::path& path);
