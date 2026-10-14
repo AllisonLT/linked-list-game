@@ -60,18 +60,18 @@ void Window::pollEvents() {
 }
 
 void Window::beginRender() {
-    // Clear whole physical window to dark black (letterbox bars)
+    // Clear the physical window so the letterbox area matches the canvas background.
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     glViewport(0, 0, fbWidth, fbHeight);
-    glClearColor(0.06f, 0.08f, 0.12f, 1.0f);
+    glClearColor(0.68f, 0.85f, 0.95f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Scissor test to only clear the 16:9 canvas region
     glViewport(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height);
     glEnable(GL_SCISSOR_TEST);
     glScissor(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height);
-    glClearColor(0.10f, 0.13f, 0.19f, 1.0f);
+    glClearColor(0.68f, 0.85f, 0.95f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
 }
