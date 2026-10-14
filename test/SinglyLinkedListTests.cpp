@@ -86,6 +86,7 @@ void testSupportsUnicodePayloads() {
 void testDefinesNodeLayout() {
     const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
 
+    require(layout.card.width == layout.card.height, "node body is square");
     require(
         layout.value.x > layout.card.x && layout.value.y > layout.card.y &&
             layout.value.x + layout.value.width < layout.card.x + layout.card.width &&

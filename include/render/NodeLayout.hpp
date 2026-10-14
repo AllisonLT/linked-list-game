@@ -22,8 +22,8 @@ struct NodeLayout {
     Circle outputSocket;
 };
 
-inline constexpr float NODE_CARD_WIDTH = 360.0f;
 inline constexpr float NODE_CARD_HEIGHT = 200.0f;
+inline constexpr float NODE_CARD_WIDTH = NODE_CARD_HEIGHT;
 
 inline NodeLayout makeNodeLayout(float x, float y) {
     constexpr float padding = 24.0f;
