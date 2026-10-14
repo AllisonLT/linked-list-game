@@ -97,10 +97,11 @@ void testDefinesNodeLayout() {
             layout.nextLabel.y + layout.nextLabel.height < layout.card.y + layout.card.height,
         "next label region is contained within the card");
     require(
-        layout.outputSocket.centerX == layout.card.x + layout.card.width &&
+        layout.outputSocket.centerX > layout.card.x + layout.card.width &&
+            layout.outputSocket.centerX - layout.outputSocket.radius < layout.card.x + layout.card.width &&
             layout.outputSocket.centerY > layout.card.y &&
             layout.outputSocket.centerY < layout.card.y + layout.card.height,
-        "output socket is anchored to the card edge");
+        "output socket protrudes from the card edge");
 }
 
 } // namespace
