@@ -58,6 +58,7 @@ file(GLOB_RECURSE APP_SOURCES
 )
 
 add_executable(${PROJECT_NAME} ${APP_SOURCES})
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
 
 # Include headers from our own include/ and third-party headers
 target_include_directories(${PROJECT_NAME} PRIVATE
