@@ -1,4 +1,5 @@
 #include "model/SinglyLinkedList.hpp"
+#include "render/NodeLayout.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -82,6 +83,25 @@ void testSupportsUnicodePayloads() {
     require(list.node(node).value == U"\U0001F680", "generic node values preserve Unicode data");
 }
 
+void testDefinesNodeLayout() {
+    const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
+
+    require(
+        layout.value.x > layout.card.x && layout.value.y > layout.card.y &&
+            layout.value.x + layout.value.width < layout.card.x + layout.card.width &&
+            layout.value.y + layout.value.height < layout.card.y + layout.card.height,
+        "value region is contained within the card");
+    require(
+        layout.nextLabel.x > layout.card.x && layout.nextLabel.y > layout.card.y &&
+            layout.nextLabel.y + layout.nextLabel.height < layout.card.y + layout.card.height,
+        "next label region is contained within the card");
+    require(
+        layout.outputSocket.centerX == layout.card.x + layout.card.width &&
+            layout.outputSocket.centerY > layout.card.y &&
+            layout.outputSocket.centerY < layout.card.y + layout.card.height,
+        "output socket is anchored to the card edge");
+}
+
 } // namespace
 
 int main() {
@@ -89,4 +109,5 @@ int main() {
     testNullLinksAndDeletion();
     testRejectsUnknownNodes();
     testSupportsUnicodePayloads();
+    testDefinesNodeLayout();
 }
