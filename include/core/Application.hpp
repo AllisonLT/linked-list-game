@@ -62,14 +62,13 @@ private:
     void drawDirectionalPointer(float sourceX, float sourceY, float destinationX, float destinationY) const;
     void drawNullEndpoint(const view::NodeViewState& node) const;
     void drawCircle(float centerX, float centerY, float radius, const Color& color) const;
-    void drawReferenceDockOutline(
-        const render::Circle& dock,
-        float outlineWidth,
-        const Color& color) const;
-    void drawOutputSocketOutline(
-        const render::Rectangle& card,
-        const render::Circle& socket,
-        float outlineWidth,
+    void drawNodeSilhouette(
+        const render::NodeLayout& layout,
+        float glowExpansion,
+        const Color& fillColor) const;
+    void drawRectangleWithCircularCutout(
+        const render::Rectangle& rectangle,
+        const render::Circle& cutout,
         const Color& color) const;
     void drawRectangle(const render::Rectangle& rectangle, const Color& color) const;
     void bringToFront(const NodeReference& node);

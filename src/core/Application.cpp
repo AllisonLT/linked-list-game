@@ -197,7 +197,6 @@ void Application::drawNodeCard(
     constexpr Color hoverOutline{0.18f, 0.58f, 0.95f};
     constexpr Color selectedOutline{0.08f, 0.37f, 0.88f};
     constexpr Color selectedNodeColor{0.05f, 0.15f, 0.29f};
-    constexpr Color canvasColor{0.68f, 0.85f, 0.95f};
     constexpr float hoverOutlineWidth = 5.0f;
     constexpr float selectedOutlineWidth = 8.0f;
     const render::NodeLayout layout = layoutFor(node);
@@ -208,41 +207,10 @@ void Application::drawNodeCard(
 
     if (outlineWidth > 0.0f) {
         const Color& outlineColor = selected ? selectedOutline : hoverOutline;
-        drawRectangle(layout.card, outlineColor);
-        drawRectangle(
-            {
-                layout.card.x + outlineWidth,
-                layout.card.y + outlineWidth,
-                layout.card.width - (2.0f * outlineWidth),
-                layout.card.height - (2.0f * outlineWidth),
-            },
-            cardColor);
-        drawCircle(
-            layout.referenceDock.centerX,
-            layout.referenceDock.centerY,
-            layout.referenceDock.radius,
-            canvasColor);
-        drawReferenceDockOutline(layout.referenceDock, outlineWidth, outlineColor);
-        drawOutputSocketOutline(layout.card, layout.outputSocket, outlineWidth, outlineColor);
-        drawCircle(
-            layout.outputSocket.centerX,
-            layout.outputSocket.centerY,
-            layout.outputSocket.radius - outlineWidth,
-            cardColor);
-        return;
+        drawNodeSilhouette(layout, outlineWidth, outlineColor);
     }
 
-    drawRectangle(layout.card, cardColor);
-    drawCircle(
-        layout.referenceDock.centerX,
-        layout.referenceDock.centerY,
-        layout.referenceDock.radius,
-        canvasColor);
-    drawCircle(
-        layout.outputSocket.centerX,
-        layout.outputSocket.centerY,
-        layout.outputSocket.radius,
-        cardColor);
+    drawNodeSilhouette(layout, 0.0f, cardColor);
 }
 
 void Application::drawNodeText(
@@ -425,89 +393,113 @@ void Application::drawNullEndpoint(const view::NodeViewState& node) const {
         labelColor.alpha);
 }
 
-void Application::drawReferenceDockOutline(
-    const render::Circle& dock,
-    float outlineWidth,
-    const Color& color) const {
-    const float innerRadius = std::max(0.0f, dock.radius - outlineWidth);
-    std::vector<float> vertices;
-    vertices.reserve(CIRCLE_SEGMENTS * 12);
+void Application::drawNodeSilhouette(
+    const render::NodeLayout& layout,
+    float glowExpansion,
+    const Color& fillColor) const {
+    const render::Rectangle expandedCard{
+        .x = layout.card.x - glowExpansion,
+        .y = layout.card.y - glowExpansion,
+        .width = layout.card.width + (2.0f * glowExpansion),
+        .height = layout.card.height + (2.0f * glowExpansion),
+    };
+    const render::Circle dockCutout{
+        .centerX = layout.referenceDock.centerX,
+        .centerY = layout.referenceDock.centerY,
+        .radius = std::max(0.0f, layout.referenceDock.radius - glowExpansion),
+    };
 
-    for (int segment = 0; segment < CIRCLE_SEGMENTS; ++segment) {
-        const float startAngle = PI * static_cast<float>(segment) / CIRCLE_SEGMENTS;
-        const float endAngle = PI * static_cast<float>(segment + 1) / CIRCLE_SEGMENTS;
-        const float outerStartX = dock.centerX + std::cos(startAngle) * dock.radius;
-        const float outerStartY = dock.centerY + std::sin(startAngle) * dock.radius;
-        const float outerEndX = dock.centerX + std::cos(endAngle) * dock.radius;
-        const float outerEndY = dock.centerY + std::sin(endAngle) * dock.radius;
-        const float innerStartX = dock.centerX + std::cos(startAngle) * innerRadius;
-        const float innerStartY = dock.centerY + std::sin(startAngle) * innerRadius;
-        const float innerEndX = dock.centerX + std::cos(endAngle) * innerRadius;
-        const float innerEndY = dock.centerY + std::sin(endAngle) * innerRadius;
-
-        vertices.insert(
-            vertices.end(),
-            {
-                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
-                toNormalizedDeviceX(outerEndX), toNormalizedDeviceY(outerEndY),
-                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
-                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
-                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
-                toNormalizedDeviceX(innerStartX), toNormalizedDeviceY(innerStartY),
-            });
-    }
-
-    m_ColorShader->use();
-    m_ColorShader->setColor(color.red, color.green, color.blue, color.alpha);
-    glBindVertexArray(m_RectangleVertexArray);
-    glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
-        vertices.data(),
-        GL_DYNAMIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 2));
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    drawRectangleWithCircularCutout(expandedCard, dockCutout, fillColor);
+    drawCircle(
+        layout.outputSocket.centerX,
+        layout.outputSocket.centerY,
+        layout.outputSocket.radius + glowExpansion,
+        fillColor);
 }
 
-void Application::drawOutputSocketOutline(
-    const render::Rectangle& card,
-    const render::Circle& socket,
-    float outlineWidth,
+void Application::drawRectangleWithCircularCutout(
+    const render::Rectangle& rectangle,
+    const render::Circle& cutout,
     const Color& color) const {
-    const float innerRadius = std::max(0.0f, socket.radius - outlineWidth);
-    const float cardRight = card.x + card.width;
-    const float edgeRatio = std::clamp(
-        (cardRight - socket.centerX) / socket.radius,
-        -1.0f,
-        1.0f);
-    const float halfAngle = std::acos(edgeRatio);
     std::vector<float> vertices;
-    vertices.reserve(CIRCLE_SEGMENTS * 12);
+    vertices.reserve((CIRCLE_SEGMENTS * 12) + 24);
+    const float rectangleLeft = rectangle.x;
+    const float rectangleRight = rectangle.x + rectangle.width;
+    const float rectangleTop = rectangle.y;
+    const float rectangleBottom = rectangle.y + rectangle.height;
+    const float cutoutTop = cutout.centerY - cutout.radius;
+    const float cutoutBottom = cutout.centerY + cutout.radius;
 
-    for (int segment = 0; segment < CIRCLE_SEGMENTS; ++segment) {
-        const float startAngle = -halfAngle + (2.0f * halfAngle * segment) / CIRCLE_SEGMENTS;
-        const float endAngle = -halfAngle + (2.0f * halfAngle * (segment + 1)) / CIRCLE_SEGMENTS;
-        const float outerStartX = socket.centerX + std::cos(startAngle) * socket.radius;
-        const float outerStartY = socket.centerY + std::sin(startAngle) * socket.radius;
-        const float outerEndX = socket.centerX + std::cos(endAngle) * socket.radius;
-        const float outerEndY = socket.centerY + std::sin(endAngle) * socket.radius;
-        const float innerStartX = socket.centerX + std::cos(startAngle) * innerRadius;
-        const float innerStartY = socket.centerY + std::sin(startAngle) * innerRadius;
-        const float innerEndX = socket.centerX + std::cos(endAngle) * innerRadius;
-        const float innerEndY = socket.centerY + std::sin(endAngle) * innerRadius;
-
+    const auto appendRectangle = [&vertices](float left, float top, float right, float bottom) {
         vertices.insert(
             vertices.end(),
             {
-                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
-                toNormalizedDeviceX(outerEndX), toNormalizedDeviceY(outerEndY),
-                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
-                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
-                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
-                toNormalizedDeviceX(innerStartX), toNormalizedDeviceY(innerStartY),
+                toNormalizedDeviceX(left), toNormalizedDeviceY(top),
+                toNormalizedDeviceX(right), toNormalizedDeviceY(top),
+                toNormalizedDeviceX(right), toNormalizedDeviceY(bottom),
+                toNormalizedDeviceX(left), toNormalizedDeviceY(top),
+                toNormalizedDeviceX(right), toNormalizedDeviceY(bottom),
+                toNormalizedDeviceX(left), toNormalizedDeviceY(bottom),
             });
+    };
+    const auto appendQuadrilateral = [&vertices](
+                                        float firstLeft,
+                                        float firstRight,
+                                        float firstY,
+                                        float secondLeft,
+                                        float secondRight,
+                                        float secondY) {
+        vertices.insert(
+            vertices.end(),
+            {
+                toNormalizedDeviceX(firstLeft), toNormalizedDeviceY(firstY),
+                toNormalizedDeviceX(firstRight), toNormalizedDeviceY(firstY),
+                toNormalizedDeviceX(secondRight), toNormalizedDeviceY(secondY),
+                toNormalizedDeviceX(firstLeft), toNormalizedDeviceY(firstY),
+                toNormalizedDeviceX(secondRight), toNormalizedDeviceY(secondY),
+                toNormalizedDeviceX(secondLeft), toNormalizedDeviceY(secondY),
+            });
+    };
+
+    if (rectangleTop < cutoutTop) {
+        appendRectangle(rectangleLeft, rectangleTop, rectangleRight, std::min(rectangleBottom, cutoutTop));
+    }
+    if (rectangleBottom > cutoutBottom) {
+        appendRectangle(rectangleLeft, std::max(rectangleTop, cutoutBottom), rectangleRight, rectangleBottom);
+    }
+
+    const float cutoutVisibleTop = std::max(rectangleTop, cutoutTop);
+    const float cutoutVisibleBottom = std::min(rectangleBottom, cutoutBottom);
+    if (cutoutVisibleTop < cutoutVisibleBottom) {
+        for (int segment = 0; segment < CIRCLE_SEGMENTS; ++segment) {
+            const float startY = cutoutVisibleTop +
+                                 (cutoutVisibleBottom - cutoutVisibleTop) * segment / CIRCLE_SEGMENTS;
+            const float endY = cutoutVisibleTop +
+                               (cutoutVisibleBottom - cutoutVisibleTop) * (segment + 1) / CIRCLE_SEGMENTS;
+            const float startDistanceY = startY - cutout.centerY;
+            const float endDistanceY = endY - cutout.centerY;
+            const float startHalfWidth = std::sqrt(std::max(
+                0.0f,
+                (cutout.radius * cutout.radius) - (startDistanceY * startDistanceY)));
+            const float endHalfWidth = std::sqrt(std::max(
+                0.0f,
+                (cutout.radius * cutout.radius) - (endDistanceY * endDistanceY)));
+
+            appendQuadrilateral(
+                rectangleLeft,
+                cutout.centerX - startHalfWidth,
+                startY,
+                rectangleLeft,
+                cutout.centerX - endHalfWidth,
+                endY);
+            appendQuadrilateral(
+                cutout.centerX + startHalfWidth,
+                rectangleRight,
+                startY,
+                cutout.centerX + endHalfWidth,
+                rectangleRight,
+                endY);
+        }
     }
 
     m_ColorShader->use();
