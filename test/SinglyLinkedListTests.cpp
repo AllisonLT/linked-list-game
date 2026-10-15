@@ -153,6 +153,9 @@ void testCardHitTesting() {
             100.0f + game::render::NODE_CARD_WIDTH + 10.0f,
             300.0f),
         "card excludes the next pointer");
+    require(
+        !game::render::isPointInsideCard(node, 200.0f, 200.0f),
+        "card excludes the external-reference dock");
 }
 
 void testDefinesNodeLayout() {
@@ -168,6 +171,11 @@ void testDefinesNodeLayout() {
         layout.nextLabel.x > layout.card.x && layout.nextLabel.y > layout.card.y &&
             layout.nextLabel.y + layout.nextLabel.height < layout.card.y + layout.card.height,
         "next label region is contained within the card");
+    require(
+        layout.referenceDock.centerX == layout.card.x + layout.card.width / 2.0f &&
+            layout.referenceDock.centerY == layout.card.y &&
+            layout.referenceDock.radius > 0.0f,
+        "reference dock is centered on the card top edge");
     require(
         layout.outputSocket.centerX > layout.card.x + layout.card.width &&
             layout.outputSocket.centerX - layout.outputSocket.radius < layout.card.x + layout.card.width &&

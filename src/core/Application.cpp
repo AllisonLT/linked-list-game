@@ -127,6 +127,8 @@ void Application::render() {
         drawNodeCard(*reference.example, node);
         drawNodeText(*reference.example, node);
     }
+    drawHeadIndicator(m_CorrectExample);
+    drawHeadIndicator(m_IncorrectExample);
     m_Window->endRender();
 }
 
@@ -192,33 +194,50 @@ void Application::drawNodeCard(
     const ListExample& example,
     const view::NodeViewState& node) const {
     constexpr Color nodeColor{0.07f, 0.10f, 0.15f};
-    constexpr Color hoverGlow{0.18f, 0.58f, 0.95f, 0.32f};
-    constexpr Color selectedGlow{0.08f, 0.37f, 0.88f, 0.52f};
+    constexpr Color hoverOutline{0.18f, 0.58f, 0.95f};
+    constexpr Color selectedOutline{0.08f, 0.37f, 0.88f};
     constexpr Color selectedNodeColor{0.05f, 0.15f, 0.29f};
+    constexpr Color canvasColor{0.68f, 0.85f, 0.95f};
+    constexpr float hoverOutlineWidth = 5.0f;
+    constexpr float selectedOutlineWidth = 8.0f;
     const render::NodeLayout layout = layoutFor(node);
+    const bool selected = isNodeSelected(example, node.id);
+    const bool hovered = isNodeHovered(example, node.id);
+    const float outlineWidth = selected ? selectedOutlineWidth : (hovered ? hoverOutlineWidth : 0.0f);
+    const Color& cardColor = selected ? selectedNodeColor : nodeColor;
 
-    if (isNodeSelected(example, node.id)) {
+    if (outlineWidth > 0.0f) {
+        const Color& outlineColor = selected ? selectedOutline : hoverOutline;
+        drawRectangle(layout.card, outlineColor);
         drawRectangle(
-            {layout.card.x - 16.0f, layout.card.y - 16.0f, layout.card.width + 32.0f, layout.card.height + 32.0f},
-            selectedGlow);
+            {
+                layout.card.x + outlineWidth,
+                layout.card.y + outlineWidth,
+                layout.card.width - (2.0f * outlineWidth),
+                layout.card.height - (2.0f * outlineWidth),
+            },
+            cardColor);
+        drawCircle(
+            layout.referenceDock.centerX,
+            layout.referenceDock.centerY,
+            layout.referenceDock.radius,
+            canvasColor);
+        drawReferenceDockOutline(layout.referenceDock, outlineWidth, outlineColor);
+        drawOutputSocketOutline(layout.card, layout.outputSocket, outlineWidth, outlineColor);
         drawCircle(
             layout.outputSocket.centerX,
             layout.outputSocket.centerY,
-            layout.outputSocket.radius + 16.0f,
-            selectedGlow);
-    } else if (isNodeHovered(example, node.id)) {
-        drawRectangle(
-            {layout.card.x - 8.0f, layout.card.y - 8.0f, layout.card.width + 16.0f, layout.card.height + 16.0f},
-            hoverGlow);
-        drawCircle(
-            layout.outputSocket.centerX,
-            layout.outputSocket.centerY,
-            layout.outputSocket.radius + 8.0f,
-            hoverGlow);
+            layout.outputSocket.radius - outlineWidth,
+            cardColor);
+        return;
     }
 
-    const Color& cardColor = isNodeSelected(example, node.id) ? selectedNodeColor : nodeColor;
     drawRectangle(layout.card, cardColor);
+    drawCircle(
+        layout.referenceDock.centerX,
+        layout.referenceDock.centerY,
+        layout.referenceDock.radius,
+        canvasColor);
     drawCircle(
         layout.outputSocket.centerX,
         layout.outputSocket.centerY,
@@ -262,7 +281,6 @@ void Application::drawExampleConnections(const ListExample& example) const {
     constexpr Color labelColor{0.07f, 0.10f, 0.15f};
 
     drawListPointers(example);
-    drawHeadIndicator(example);
     drawNullEndpoints(example);
     m_RobotoRegularTextRenderer->draw(
         example.description,
@@ -303,8 +321,12 @@ void Application::drawHeadIndicator(const ListExample& example) const {
 
     const view::NodeViewState& head = findNodeVisual(example.nodes, *headId);
     const render::NodeLayout layout = layoutFor(head);
-    const float centerX = layout.card.x + layout.card.width / 2.0f;
-    drawDirectionalPointer(centerX, layout.card.y - 80.0f, centerX, layout.card.y);
+    const float centerX = layout.referenceDock.centerX;
+    drawDirectionalPointer(
+        centerX,
+        layout.card.y - 80.0f,
+        centerX,
+        layout.referenceDock.centerY + layout.referenceDock.radius);
     m_RobotoRegularTextRenderer->draw(
         headLabel,
         centerX - m_RobotoRegularTextRenderer->measureWidth(headLabel) / 2.0f,
@@ -401,6 +423,105 @@ void Application::drawNullEndpoint(const view::NodeViewState& node) const {
         labelColor.green,
         labelColor.blue,
         labelColor.alpha);
+}
+
+void Application::drawReferenceDockOutline(
+    const render::Circle& dock,
+    float outlineWidth,
+    const Color& color) const {
+    const float innerRadius = std::max(0.0f, dock.radius - outlineWidth);
+    std::vector<float> vertices;
+    vertices.reserve(CIRCLE_SEGMENTS * 12);
+
+    for (int segment = 0; segment < CIRCLE_SEGMENTS; ++segment) {
+        const float startAngle = PI * static_cast<float>(segment) / CIRCLE_SEGMENTS;
+        const float endAngle = PI * static_cast<float>(segment + 1) / CIRCLE_SEGMENTS;
+        const float outerStartX = dock.centerX + std::cos(startAngle) * dock.radius;
+        const float outerStartY = dock.centerY + std::sin(startAngle) * dock.radius;
+        const float outerEndX = dock.centerX + std::cos(endAngle) * dock.radius;
+        const float outerEndY = dock.centerY + std::sin(endAngle) * dock.radius;
+        const float innerStartX = dock.centerX + std::cos(startAngle) * innerRadius;
+        const float innerStartY = dock.centerY + std::sin(startAngle) * innerRadius;
+        const float innerEndX = dock.centerX + std::cos(endAngle) * innerRadius;
+        const float innerEndY = dock.centerY + std::sin(endAngle) * innerRadius;
+
+        vertices.insert(
+            vertices.end(),
+            {
+                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
+                toNormalizedDeviceX(outerEndX), toNormalizedDeviceY(outerEndY),
+                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
+                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
+                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
+                toNormalizedDeviceX(innerStartX), toNormalizedDeviceY(innerStartY),
+            });
+    }
+
+    m_ColorShader->use();
+    m_ColorShader->setColor(color.red, color.green, color.blue, color.alpha);
+    glBindVertexArray(m_RectangleVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
+        vertices.data(),
+        GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 2));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Application::drawOutputSocketOutline(
+    const render::Rectangle& card,
+    const render::Circle& socket,
+    float outlineWidth,
+    const Color& color) const {
+    const float innerRadius = std::max(0.0f, socket.radius - outlineWidth);
+    const float cardRight = card.x + card.width;
+    const float edgeRatio = std::clamp(
+        (cardRight - socket.centerX) / socket.radius,
+        -1.0f,
+        1.0f);
+    const float halfAngle = std::acos(edgeRatio);
+    std::vector<float> vertices;
+    vertices.reserve(CIRCLE_SEGMENTS * 12);
+
+    for (int segment = 0; segment < CIRCLE_SEGMENTS; ++segment) {
+        const float startAngle = -halfAngle + (2.0f * halfAngle * segment) / CIRCLE_SEGMENTS;
+        const float endAngle = -halfAngle + (2.0f * halfAngle * (segment + 1)) / CIRCLE_SEGMENTS;
+        const float outerStartX = socket.centerX + std::cos(startAngle) * socket.radius;
+        const float outerStartY = socket.centerY + std::sin(startAngle) * socket.radius;
+        const float outerEndX = socket.centerX + std::cos(endAngle) * socket.radius;
+        const float outerEndY = socket.centerY + std::sin(endAngle) * socket.radius;
+        const float innerStartX = socket.centerX + std::cos(startAngle) * innerRadius;
+        const float innerStartY = socket.centerY + std::sin(startAngle) * innerRadius;
+        const float innerEndX = socket.centerX + std::cos(endAngle) * innerRadius;
+        const float innerEndY = socket.centerY + std::sin(endAngle) * innerRadius;
+
+        vertices.insert(
+            vertices.end(),
+            {
+                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
+                toNormalizedDeviceX(outerEndX), toNormalizedDeviceY(outerEndY),
+                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
+                toNormalizedDeviceX(outerStartX), toNormalizedDeviceY(outerStartY),
+                toNormalizedDeviceX(innerEndX), toNormalizedDeviceY(innerEndY),
+                toNormalizedDeviceX(innerStartX), toNormalizedDeviceY(innerStartY),
+            });
+    }
+
+    m_ColorShader->use();
+    m_ColorShader->setColor(color.red, color.green, color.blue, color.alpha);
+    glBindVertexArray(m_RectangleVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
+        vertices.data(),
+        GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 2));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void Application::drawCircle(float centerX, float centerY, float radius, const Color& color) const {
