@@ -17,6 +17,9 @@ Makefile
 *.so
 *.dylib
 
+# Compiled game
+!LinkedListGame.exe
+
 # IDE & OS files
 .vscode/
 .idea/

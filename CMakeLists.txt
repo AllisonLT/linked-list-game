@@ -67,6 +67,13 @@ file(GLOB_RECURSE APP_SOURCES
 )
 
 add_executable(${PROJECT_NAME} ${APP_SOURCES})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_CURRENT_SOURCE_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
 
 # Include headers from our own include/ and third-party headers
@@ -100,14 +107,4 @@ if(BUILD_TESTING)
     add_executable(SinglyLinkedListTests test/SinglyLinkedListTests.cpp)
     target_include_directories(SinglyLinkedListTests PRIVATE include)
     add_test(NAME SinglyLinkedListTests COMMAND SinglyLinkedListTests)
-endif()
-
-# Copy assets folder into the build folder after each compilation
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
-        COMMENT "Syncing assets to output directory..."
-    )
 endif()
