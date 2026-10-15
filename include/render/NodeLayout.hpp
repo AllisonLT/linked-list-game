@@ -36,12 +36,18 @@ inline NodeLayout makeNodeLayout(float x, float y) {
     constexpr float socketOffsetX = 10.0f;
     constexpr float socketY = NODE_CARD_HEIGHT / 2.0f;
     constexpr float socketRadius = 40.0f;
+    constexpr float referenceDockOffsetY =
+        socketOffsetX * referenceDockRadius / socketRadius;
 
     return {
         .card = {x, y, NODE_CARD_WIDTH, NODE_CARD_HEIGHT},
         .value = {x + padding, y + valueY, NODE_CARD_WIDTH - (2.0f * padding), valueHeight},
         .nextLabel = {x + padding, y + labelY, labelWidth, 32.0f},
-        .referenceDock = {x + NODE_CARD_WIDTH / 2.0f, y, referenceDockRadius},
+        .referenceDock = {
+            x + NODE_CARD_WIDTH / 2.0f,
+            y + referenceDockOffsetY,
+            referenceDockRadius,
+        },
         .outputSocket = {x + NODE_CARD_WIDTH + socketOffsetX, y + socketY, socketRadius},
     };
 }

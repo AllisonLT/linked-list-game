@@ -173,9 +173,10 @@ void testDefinesNodeLayout() {
         "next label region is contained within the card");
     require(
         layout.referenceDock.centerX == layout.card.x + layout.card.width / 2.0f &&
-            layout.referenceDock.centerY == layout.card.y &&
+            layout.referenceDock.centerY > layout.card.y &&
+            layout.referenceDock.centerY - layout.referenceDock.radius < layout.card.y &&
             layout.referenceDock.radius > 0.0f,
-        "reference dock is centered on the card top edge");
+        "reference dock is a more-than-semicircular top concavity");
     require(
         layout.outputSocket.centerX > layout.card.x + layout.card.width &&
             layout.outputSocket.centerX - layout.outputSocket.radius < layout.card.x + layout.card.width &&
