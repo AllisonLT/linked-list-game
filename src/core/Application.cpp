@@ -95,6 +95,7 @@ void Application::render() {
     drawNodeCard(m_DestinationNode);
     drawNodeText(m_SourceNode);
     drawNodeText(m_DestinationNode);
+    drawNullEndpoint(m_DestinationNode);
     m_RobotoRegularTextRenderer->draw(
         "Static list preview",
         80.0f,
@@ -215,6 +216,26 @@ void Application::drawDirectionalPointer(
     glDrawArrays(GL_TRIANGLES, 0, 9);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+void Application::drawNullEndpoint(const NodeVisual& node) const {
+    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
+    constexpr Color labelColor{0.07f, 0.10f, 0.15f};
+    constexpr float lineLength = 100.0f;
+    constexpr float lineHeight = 8.0f;
+    constexpr float labelGap = 20.0f;
+
+    const float lineX = node.layout.outputSocket.centerX + node.layout.outputSocket.radius;
+    const float lineY = node.layout.outputSocket.centerY - lineHeight / 2.0f;
+    drawRectangle({lineX, lineY, lineLength, lineHeight}, pointerColor);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "nullptr",
+        lineX + lineLength + labelGap,
+        node.layout.outputSocket.centerY + 7.0f,
+        labelColor.red,
+        labelColor.green,
+        labelColor.blue,
+        labelColor.alpha);
 }
 
 void Application::drawCircle(float centerX, float centerY, float radius, const Color& color) const {

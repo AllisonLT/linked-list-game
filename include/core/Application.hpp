@@ -37,6 +37,7 @@ private:
     void drawNodeCard(const NodeVisual& node) const;
     void drawNodeText(const NodeVisual& node) const;
     void drawDirectionalPointer(float sourceX, float sourceY, float destinationX, float destinationY) const;
+    void drawNullEndpoint(const NodeVisual& node) const;
     void drawCircle(float centerX, float centerY, float radius, const Color& color) const;
     void drawRectangle(const render::Rectangle& rectangle, const Color& color) const;
 
