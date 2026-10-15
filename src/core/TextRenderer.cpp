@@ -145,6 +145,17 @@ void TextRenderer::draw(
     glBindVertexArray(0);
 }
 
+float TextRenderer::measureWidth(std::string_view text) const {
+    float width = 0.0f;
+    for (const unsigned char character : text) {
+        const auto iterator = m_Glyphs.find(character);
+        if (iterator != m_Glyphs.end()) {
+            width += static_cast<float>(iterator->second.advance >> 6);
+        }
+    }
+    return width;
+}
+
 void TextRenderer::release() noexcept {
     if (m_VertexBuffer != 0) {
         glDeleteBuffers(1, &m_VertexBuffer);

@@ -27,6 +27,7 @@ public:
         float green,
         float blue,
         float alpha) const;
+    [[nodiscard]] float measureWidth(std::string_view text) const;
 
 private:
     struct Glyph {

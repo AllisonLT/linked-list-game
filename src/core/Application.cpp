@@ -10,7 +10,6 @@ namespace {
 
 constexpr float NODE_CARD_X = 780.0f;
 constexpr float NODE_CARD_Y = 440.0f;
-constexpr float SAMPLE_TEXT_X = 600.0f;
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 
@@ -30,12 +29,20 @@ Application::Application() {
     m_ColorShader = std::make_unique<ShaderProgram>(
         "assets/shaders/solid_color.vert",
         "assets/shaders/solid_color.frag");
-    m_RobotoMonoTextRenderer = std::make_unique<TextRenderer>(
+    m_RobotoMonoValueTextRenderer = std::make_unique<TextRenderer>(
         "assets/fonts/RobotoMono-Regular.ttf",
         48);
+    m_RobotoMonoPointerTextRenderer = std::make_unique<TextRenderer>(
+        "assets/fonts/RobotoMono-Regular.ttf",
+        20);
     m_RobotoRegularTextRenderer = std::make_unique<TextRenderer>(
         "assets/fonts/Roboto-Regular.ttf",
-        48);
+        32);
+    m_DemoNode = {
+        .layout = render::makeNodeLayout(NODE_CARD_X, NODE_CARD_Y),
+        .value = "42",
+        .nextLabel = "next",
+    };
     createRectangleRenderer();
 }
 
@@ -73,19 +80,12 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
-    drawNodeCard();
-    m_RobotoMonoTextRenderer->draw(
-        "This is Roboto Mono.",
-        SAMPLE_TEXT_X,
-        760.0f,
-        0.07f,
-        0.10f,
-        0.15f,
-        1.0f);
+    drawNodeCard(m_DemoNode);
+    drawNodeText(m_DemoNode);
     m_RobotoRegularTextRenderer->draw(
-        "This is Roboto Regular.",
-        SAMPLE_TEXT_X,
-        840.0f,
+        "Static list preview",
+        80.0f,
+        100.0f,
         0.07f,
         0.10f,
         0.15f,
@@ -107,16 +107,42 @@ void Application::createRectangleRenderer() {
     glBindVertexArray(0);
 }
 
-void Application::drawNodeCard() const {
+void Application::drawNodeCard(const NodeVisual& node) const {
     constexpr Color nodeColor{0.07f, 0.10f, 0.15f};
 
-    const render::NodeLayout layout = render::makeNodeLayout(NODE_CARD_X, NODE_CARD_Y);
-    drawRectangle(layout.card, nodeColor);
+    drawRectangle(node.layout.card, nodeColor);
     drawCircle(
-        layout.outputSocket.centerX,
-        layout.outputSocket.centerY,
-        layout.outputSocket.radius,
+        node.layout.outputSocket.centerX,
+        node.layout.outputSocket.centerY,
+        node.layout.outputSocket.radius,
         nodeColor);
+}
+
+void Application::drawNodeText(const NodeVisual& node) const {
+    constexpr Color nodeTextColor{0.92f, 0.96f, 1.0f};
+    const float valueX = node.layout.card.x +
+                         (node.layout.card.width -
+                          m_RobotoMonoValueTextRenderer->measureWidth(node.value)) /
+                             2.0f;
+    const float pointerLabelX = node.layout.outputSocket.centerX -
+                                m_RobotoMonoPointerTextRenderer->measureWidth(node.nextLabel) / 2.0f;
+
+    m_RobotoMonoValueTextRenderer->draw(
+        node.value,
+        valueX,
+        node.layout.card.y + (node.layout.card.height + 32.0f) / 2.0f,
+        nodeTextColor.red,
+        nodeTextColor.green,
+        nodeTextColor.blue,
+        nodeTextColor.alpha);
+    m_RobotoMonoPointerTextRenderer->draw(
+        node.nextLabel,
+        pointerLabelX,
+        node.layout.outputSocket.centerY + 7.0f,
+        nodeTextColor.red,
+        nodeTextColor.green,
+        nodeTextColor.blue,
+        nodeTextColor.alpha);
 }
 
 void Application::drawCircle(float centerX, float centerY, float radius, const Color& color) const {
