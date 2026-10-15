@@ -1,5 +1,6 @@
 #include "model/SinglyLinkedList.hpp"
 #include "render/NodeLayout.hpp"
+#include "view/NodeViewState.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -115,6 +116,19 @@ void testDisconnectedThreeNodeExample() {
     require(list.isConsistent(), "disconnected nodes are structurally consistent");
 }
 
+void testNodeViewStateIsSeparateFromListData() {
+    game::model::SinglyLinkedList<int> list;
+    const auto node = list.emplaceNode(42);
+    game::view::NodeViewState viewState{.id = node, .x = 100.0f, .y = 200.0f};
+
+    viewState.x = 350.0f;
+    viewState.y = 475.0f;
+
+    require(list.node(viewState.id).value == 42, "moving a card does not change its node value");
+    require(list.node(viewState.id).id == node, "view state retains the node identity");
+    require(viewState.x == 350.0f && viewState.y == 475.0f, "view state stores card position");
+}
+
 void testDefinesNodeLayout() {
     const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
 
@@ -145,5 +159,6 @@ int main() {
     testSupportsUnicodePayloads();
     testThreeNodeExample();
     testDisconnectedThreeNodeExample();
+    testNodeViewStateIsSeparateFromListData();
     testDefinesNodeLayout();
 }

@@ -51,9 +51,9 @@ Application::Application() {
     m_CorrectExample.list.setNext(correctA, correctB);
     m_CorrectExample.list.setNext(correctB, correctC);
     m_CorrectExample.nodes = {
-        {.id = correctA, .layout = render::makeNodeLayout(SOURCE_NODE_X, CORRECT_NODE_Y)},
-        {.id = correctB, .layout = render::makeNodeLayout(MIDDLE_NODE_X, CORRECT_NODE_Y)},
-        {.id = correctC, .layout = render::makeNodeLayout(DESTINATION_NODE_X, CORRECT_NODE_Y)},
+        {.id = correctA, .x = SOURCE_NODE_X, .y = CORRECT_NODE_Y},
+        {.id = correctB, .x = MIDDLE_NODE_X, .y = CORRECT_NODE_Y},
+        {.id = correctC, .x = DESTINATION_NODE_X, .y = CORRECT_NODE_Y},
     };
     m_CorrectExample.description = "Correct: A -> B -> C -> nullptr";
     m_CorrectExample.descriptionBaselineY = 120.0f;
@@ -64,9 +64,9 @@ Application::Application() {
     m_IncorrectExample.list.setHead(incorrectA);
     m_IncorrectExample.list.setNext(incorrectA, incorrectB);
     m_IncorrectExample.nodes = {
-        {.id = incorrectA, .layout = render::makeNodeLayout(SOURCE_NODE_X, INCORRECT_NODE_Y)},
-        {.id = incorrectB, .layout = render::makeNodeLayout(MIDDLE_NODE_X, INCORRECT_NODE_Y)},
-        {.id = incorrectC, .layout = render::makeNodeLayout(DESTINATION_NODE_X, INCORRECT_NODE_Y)},
+        {.id = incorrectA, .x = SOURCE_NODE_X, .y = INCORRECT_NODE_Y},
+        {.id = incorrectB, .x = MIDDLE_NODE_X, .y = INCORRECT_NODE_Y},
+        {.id = incorrectC, .x = DESTINATION_NODE_X, .y = INCORRECT_NODE_Y},
     };
     m_IncorrectExample.description = "Incorrect: B ends early; C is disconnected";
     m_IncorrectExample.descriptionBaselineY = 520.0f;
@@ -130,32 +130,36 @@ void Application::createRectangleRenderer() {
     glBindVertexArray(0);
 }
 
-void Application::drawNodeCard(const NodeVisual& node) const {
+void Application::drawNodeCard(const view::NodeViewState& node) const {
     constexpr Color nodeColor{0.07f, 0.10f, 0.15f};
+    const render::NodeLayout layout = layoutFor(node);
 
-    drawRectangle(node.layout.card, nodeColor);
+    drawRectangle(layout.card, nodeColor);
     drawCircle(
-        node.layout.outputSocket.centerX,
-        node.layout.outputSocket.centerY,
-        node.layout.outputSocket.radius,
+        layout.outputSocket.centerX,
+        layout.outputSocket.centerY,
+        layout.outputSocket.radius,
         nodeColor);
 }
 
-void Application::drawNodeText(const ListExample& example, const NodeVisual& node) const {
+void Application::drawNodeText(
+    const ListExample& example,
+    const view::NodeViewState& node) const {
     constexpr Color nodeTextColor{0.92f, 0.96f, 1.0f};
     constexpr std::string_view nextLabel = "next";
+    const render::NodeLayout layout = layoutFor(node);
     const std::string& value = example.list.node(node.id).value;
-    const float valueX = node.layout.card.x +
-                         (node.layout.card.width -
+    const float valueX = layout.card.x +
+                         (layout.card.width -
                           m_RobotoMonoValueTextRenderer->measureWidth(value)) /
                              2.0f;
-    const float pointerLabelX = node.layout.outputSocket.centerX -
+    const float pointerLabelX = layout.outputSocket.centerX -
                                 m_RobotoMonoPointerTextRenderer->measureWidth(nextLabel) / 2.0f;
 
     m_RobotoMonoValueTextRenderer->draw(
         value,
         valueX,
-        node.layout.card.y + (node.layout.card.height + 32.0f) / 2.0f,
+        layout.card.y + (layout.card.height + 32.0f) / 2.0f,
         nodeTextColor.red,
         nodeTextColor.green,
         nodeTextColor.blue,
@@ -163,7 +167,7 @@ void Application::drawNodeText(const ListExample& example, const NodeVisual& nod
     m_RobotoMonoPointerTextRenderer->draw(
         nextLabel,
         pointerLabelX,
-        node.layout.outputSocket.centerY + 7.0f,
+        layout.outputSocket.centerY + 7.0f,
         nodeTextColor.red,
         nodeTextColor.green,
         nodeTextColor.blue,
@@ -175,7 +179,7 @@ void Application::drawListExample(const ListExample& example) const {
 
     drawListPointers(example);
     drawHeadIndicator(example);
-    for (const NodeVisual& node : example.nodes) {
+    for (const view::NodeViewState& node : example.nodes) {
         drawNodeCard(node);
         drawNodeText(example, node);
     }
@@ -191,18 +195,20 @@ void Application::drawListExample(const ListExample& example) const {
 }
 
 void Application::drawListPointers(const ListExample& example) const {
-    for (const NodeVisual& source : example.nodes) {
+    for (const view::NodeViewState& source : example.nodes) {
         const std::optional<model::NodeId> destinationId = example.list.node(source.id).next;
         if (!destinationId) {
             continue;
         }
 
-        const NodeVisual& destination = findNodeVisual(example.nodes, *destinationId);
+        const render::NodeLayout sourceLayout = layoutFor(source);
+        const view::NodeViewState& destination = findNodeVisual(example.nodes, *destinationId);
+        const render::NodeLayout destinationLayout = layoutFor(destination);
         drawDirectionalPointer(
-            source.layout.outputSocket.centerX,
-            source.layout.outputSocket.centerY,
-            destination.layout.card.x,
-            destination.layout.card.y + destination.layout.card.height / 2.0f);
+            sourceLayout.outputSocket.centerX,
+            sourceLayout.outputSocket.centerY,
+            destinationLayout.card.x,
+            destinationLayout.card.y + destinationLayout.card.height / 2.0f);
     }
 }
 
@@ -215,13 +221,14 @@ void Application::drawHeadIndicator(const ListExample& example) const {
         return;
     }
 
-    const NodeVisual& head = findNodeVisual(example.nodes, *headId);
-    const float centerX = head.layout.card.x + head.layout.card.width / 2.0f;
-    drawDirectionalPointer(centerX, head.layout.card.y - 80.0f, centerX, head.layout.card.y);
+    const view::NodeViewState& head = findNodeVisual(example.nodes, *headId);
+    const render::NodeLayout layout = layoutFor(head);
+    const float centerX = layout.card.x + layout.card.width / 2.0f;
+    drawDirectionalPointer(centerX, layout.card.y - 80.0f, centerX, layout.card.y);
     m_RobotoRegularTextRenderer->draw(
         headLabel,
         centerX - m_RobotoRegularTextRenderer->measureWidth(headLabel) / 2.0f,
-        head.layout.card.y - 100.0f,
+        layout.card.y - 100.0f,
         labelColor.red,
         labelColor.green,
         labelColor.blue,
@@ -229,7 +236,7 @@ void Application::drawHeadIndicator(const ListExample& example) const {
 }
 
 void Application::drawNullEndpoints(const ListExample& example) const {
-    for (const NodeVisual& node : example.nodes) {
+    for (const view::NodeViewState& node : example.nodes) {
         if (!example.list.node(node.id).next) {
             drawNullEndpoint(node);
         }
@@ -295,20 +302,21 @@ void Application::drawDirectionalPointer(
     glBindVertexArray(0);
 }
 
-void Application::drawNullEndpoint(const NodeVisual& node) const {
+void Application::drawNullEndpoint(const view::NodeViewState& node) const {
     constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
     constexpr Color labelColor{0.07f, 0.10f, 0.15f};
     constexpr float lineLength = 100.0f;
     constexpr float lineHeight = 8.0f;
     constexpr float labelGap = 20.0f;
 
-    const float lineX = node.layout.outputSocket.centerX + node.layout.outputSocket.radius;
-    const float lineY = node.layout.outputSocket.centerY - lineHeight / 2.0f;
+    const render::NodeLayout layout = layoutFor(node);
+    const float lineX = layout.outputSocket.centerX + layout.outputSocket.radius;
+    const float lineY = layout.outputSocket.centerY - lineHeight / 2.0f;
     drawRectangle({lineX, lineY, lineLength, lineHeight}, pointerColor);
     m_RobotoMonoPointerTextRenderer->draw(
         "nullptr",
         lineX + lineLength + labelGap,
-        node.layout.outputSocket.centerY + 7.0f,
+        layout.outputSocket.centerY + 7.0f,
         labelColor.red,
         labelColor.green,
         labelColor.blue,
@@ -368,10 +376,14 @@ void Application::drawRectangle(const render::Rectangle& rectangle, const Color&
     glBindVertexArray(0);
 }
 
-const Application::NodeVisual& Application::findNodeVisual(
-    const std::vector<NodeVisual>& nodes,
+render::NodeLayout Application::layoutFor(const view::NodeViewState& node) {
+    return render::makeNodeLayout(node.x, node.y);
+}
+
+const view::NodeViewState& Application::findNodeVisual(
+    const std::vector<view::NodeViewState>& nodes,
     model::NodeId id) const {
-    for (const NodeVisual& node : nodes) {
+    for (const view::NodeViewState& node : nodes) {
         if (node.id == id) {
             return node;
         }
