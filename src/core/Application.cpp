@@ -14,7 +14,8 @@ namespace {
 constexpr float SOURCE_NODE_X = 500.0f;
 constexpr float MIDDLE_NODE_X = 830.0f;
 constexpr float DESTINATION_NODE_X = 1160.0f;
-constexpr float NODE_CARD_Y = 440.0f;
+constexpr float CORRECT_NODE_Y = 300.0f;
+constexpr float INCORRECT_NODE_Y = 700.0f;
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 
@@ -43,20 +44,35 @@ Application::Application() {
     m_RobotoRegularTextRenderer = std::make_unique<TextRenderer>(
         "assets/fonts/Roboto-Regular.ttf",
         32);
-    const model::NodeId nodeA = m_List.emplaceNode("A");
-    const model::NodeId nodeB = m_List.emplaceNode("B");
-    const model::NodeId nodeC = m_List.emplaceNode("C");
-    m_List.setHead(nodeA);
-    m_List.setNext(nodeA, nodeB);
-    m_List.setNext(nodeB, nodeC);
-
-    m_NodeVisuals = {
-        {.id = nodeA, .layout = render::makeNodeLayout(SOURCE_NODE_X, NODE_CARD_Y)},
-        {.id = nodeB, .layout = render::makeNodeLayout(MIDDLE_NODE_X, NODE_CARD_Y)},
-        {.id = nodeC, .layout = render::makeNodeLayout(DESTINATION_NODE_X, NODE_CARD_Y)},
+    const model::NodeId correctA = m_CorrectExample.list.emplaceNode("A");
+    const model::NodeId correctB = m_CorrectExample.list.emplaceNode("B");
+    const model::NodeId correctC = m_CorrectExample.list.emplaceNode("C");
+    m_CorrectExample.list.setHead(correctA);
+    m_CorrectExample.list.setNext(correctA, correctB);
+    m_CorrectExample.list.setNext(correctB, correctC);
+    m_CorrectExample.nodes = {
+        {.id = correctA, .layout = render::makeNodeLayout(SOURCE_NODE_X, CORRECT_NODE_Y)},
+        {.id = correctB, .layout = render::makeNodeLayout(MIDDLE_NODE_X, CORRECT_NODE_Y)},
+        {.id = correctC, .layout = render::makeNodeLayout(DESTINATION_NODE_X, CORRECT_NODE_Y)},
     };
-    if (!m_List.isConsistent()) {
-        throw std::logic_error("The fixed linked-list example is inconsistent");
+    m_CorrectExample.description = "Correct: A -> B -> C -> nullptr";
+    m_CorrectExample.descriptionBaselineY = 120.0f;
+
+    const model::NodeId incorrectA = m_IncorrectExample.list.emplaceNode("A");
+    const model::NodeId incorrectB = m_IncorrectExample.list.emplaceNode("B");
+    const model::NodeId incorrectC = m_IncorrectExample.list.emplaceNode("C");
+    m_IncorrectExample.list.setHead(incorrectA);
+    m_IncorrectExample.list.setNext(incorrectA, incorrectB);
+    m_IncorrectExample.nodes = {
+        {.id = incorrectA, .layout = render::makeNodeLayout(SOURCE_NODE_X, INCORRECT_NODE_Y)},
+        {.id = incorrectB, .layout = render::makeNodeLayout(MIDDLE_NODE_X, INCORRECT_NODE_Y)},
+        {.id = incorrectC, .layout = render::makeNodeLayout(DESTINATION_NODE_X, INCORRECT_NODE_Y)},
+    };
+    m_IncorrectExample.description = "Incorrect: B ends early; C is disconnected";
+    m_IncorrectExample.descriptionBaselineY = 520.0f;
+
+    if (!m_CorrectExample.list.isConsistent() || !m_IncorrectExample.list.isConsistent()) {
+        throw std::logic_error("A fixed linked-list example is inconsistent");
     }
     createRectangleRenderer();
 }
@@ -95,21 +111,8 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
-    drawListPointers();
-    drawHeadIndicator();
-    for (const NodeVisual& node : m_NodeVisuals) {
-        drawNodeCard(node);
-        drawNodeText(node);
-    }
-    drawNullEndpoints();
-    m_RobotoRegularTextRenderer->draw(
-        "Static list preview",
-        80.0f,
-        100.0f,
-        0.07f,
-        0.10f,
-        0.15f,
-        1.0f);
+    drawListExample(m_CorrectExample);
+    drawListExample(m_IncorrectExample);
     m_Window->endRender();
 }
 
@@ -138,10 +141,10 @@ void Application::drawNodeCard(const NodeVisual& node) const {
         nodeColor);
 }
 
-void Application::drawNodeText(const NodeVisual& node) const {
+void Application::drawNodeText(const ListExample& example, const NodeVisual& node) const {
     constexpr Color nodeTextColor{0.92f, 0.96f, 1.0f};
     constexpr std::string_view nextLabel = "next";
-    const std::string& value = m_List.node(node.id).value;
+    const std::string& value = example.list.node(node.id).value;
     const float valueX = node.layout.card.x +
                          (node.layout.card.width -
                           m_RobotoMonoValueTextRenderer->measureWidth(value)) /
@@ -167,14 +170,34 @@ void Application::drawNodeText(const NodeVisual& node) const {
         nodeTextColor.alpha);
 }
 
-void Application::drawListPointers() const {
-    for (const NodeVisual& source : m_NodeVisuals) {
-        const std::optional<model::NodeId> destinationId = m_List.node(source.id).next;
+void Application::drawListExample(const ListExample& example) const {
+    constexpr Color labelColor{0.07f, 0.10f, 0.15f};
+
+    drawListPointers(example);
+    drawHeadIndicator(example);
+    for (const NodeVisual& node : example.nodes) {
+        drawNodeCard(node);
+        drawNodeText(example, node);
+    }
+    drawNullEndpoints(example);
+    m_RobotoRegularTextRenderer->draw(
+        example.description,
+        80.0f,
+        example.descriptionBaselineY,
+        labelColor.red,
+        labelColor.green,
+        labelColor.blue,
+        labelColor.alpha);
+}
+
+void Application::drawListPointers(const ListExample& example) const {
+    for (const NodeVisual& source : example.nodes) {
+        const std::optional<model::NodeId> destinationId = example.list.node(source.id).next;
         if (!destinationId) {
             continue;
         }
 
-        const NodeVisual& destination = findNodeVisual(*destinationId);
+        const NodeVisual& destination = findNodeVisual(example.nodes, *destinationId);
         drawDirectionalPointer(
             source.layout.outputSocket.centerX,
             source.layout.outputSocket.centerY,
@@ -183,16 +206,16 @@ void Application::drawListPointers() const {
     }
 }
 
-void Application::drawHeadIndicator() const {
+void Application::drawHeadIndicator(const ListExample& example) const {
     constexpr Color labelColor{0.07f, 0.10f, 0.15f};
     constexpr std::string_view headLabel = "head";
 
-    const std::optional<model::NodeId> headId = m_List.head();
+    const std::optional<model::NodeId> headId = example.list.head();
     if (!headId) {
         return;
     }
 
-    const NodeVisual& head = findNodeVisual(*headId);
+    const NodeVisual& head = findNodeVisual(example.nodes, *headId);
     const float centerX = head.layout.card.x + head.layout.card.width / 2.0f;
     drawDirectionalPointer(centerX, head.layout.card.y - 80.0f, centerX, head.layout.card.y);
     m_RobotoRegularTextRenderer->draw(
@@ -205,9 +228,9 @@ void Application::drawHeadIndicator() const {
         labelColor.alpha);
 }
 
-void Application::drawNullEndpoints() const {
-    for (const NodeVisual& node : m_NodeVisuals) {
-        if (!m_List.node(node.id).next) {
+void Application::drawNullEndpoints(const ListExample& example) const {
+    for (const NodeVisual& node : example.nodes) {
+        if (!example.list.node(node.id).next) {
             drawNullEndpoint(node);
         }
     }
@@ -345,8 +368,10 @@ void Application::drawRectangle(const render::Rectangle& rectangle, const Color&
     glBindVertexArray(0);
 }
 
-const Application::NodeVisual& Application::findNodeVisual(model::NodeId id) const {
-    for (const NodeVisual& node : m_NodeVisuals) {
+const Application::NodeVisual& Application::findNodeVisual(
+    const std::vector<NodeVisual>& nodes,
+    model::NodeId id) const {
+    for (const NodeVisual& node : nodes) {
         if (node.id == id) {
             return node;
         }

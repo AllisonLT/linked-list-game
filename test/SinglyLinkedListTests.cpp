@@ -100,6 +100,21 @@ void testThreeNodeExample() {
     require(list.isConsistent(), "three-node example is consistent");
 }
 
+void testDisconnectedThreeNodeExample() {
+    game::model::SinglyLinkedList<std::string> list;
+    const auto nodeA = list.emplaceNode("A");
+    const auto nodeB = list.emplaceNode("B");
+    const auto nodeC = list.emplaceNode("C");
+
+    list.setHead(nodeA);
+    list.setNext(nodeA, nodeB);
+
+    require(list.head() == nodeA, "head points to node A in the incorrect example");
+    require(!list.node(nodeB).next, "node B incorrectly has a null endpoint");
+    require(!list.node(nodeC).next, "disconnected node C has a null endpoint");
+    require(list.isConsistent(), "disconnected nodes are structurally consistent");
+}
+
 void testDefinesNodeLayout() {
     const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
 
@@ -129,5 +144,6 @@ int main() {
     testRejectsUnknownNodes();
     testSupportsUnicodePayloads();
     testThreeNodeExample();
+    testDisconnectedThreeNodeExample();
     testDefinesNodeLayout();
 }
