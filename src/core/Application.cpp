@@ -8,7 +8,8 @@
 namespace game::core {
 namespace {
 
-constexpr float NODE_CARD_X = 780.0f;
+constexpr float SOURCE_NODE_X = 500.0f;
+constexpr float DESTINATION_NODE_X = 1150.0f;
 constexpr float NODE_CARD_Y = 440.0f;
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
@@ -38,9 +39,14 @@ Application::Application() {
     m_RobotoRegularTextRenderer = std::make_unique<TextRenderer>(
         "assets/fonts/Roboto-Regular.ttf",
         32);
-    m_DemoNode = {
-        .layout = render::makeNodeLayout(NODE_CARD_X, NODE_CARD_Y),
+    m_SourceNode = {
+        .layout = render::makeNodeLayout(SOURCE_NODE_X, NODE_CARD_Y),
         .value = "42",
+        .nextLabel = "next",
+    };
+    m_DestinationNode = {
+        .layout = render::makeNodeLayout(DESTINATION_NODE_X, NODE_CARD_Y),
+        .value = "73",
         .nextLabel = "next",
     };
     createRectangleRenderer();
@@ -80,8 +86,15 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
-    drawNodeCard(m_DemoNode);
-    drawNodeText(m_DemoNode);
+    drawDirectionalPointer(
+        m_SourceNode.layout.outputSocket.centerX,
+        m_SourceNode.layout.outputSocket.centerY,
+        m_DestinationNode.layout.card.x,
+        m_DestinationNode.layout.card.y + m_DestinationNode.layout.card.height / 2.0f);
+    drawNodeCard(m_SourceNode);
+    drawNodeCard(m_DestinationNode);
+    drawNodeText(m_SourceNode);
+    drawNodeText(m_DestinationNode);
     m_RobotoRegularTextRenderer->draw(
         "Static list preview",
         80.0f,
@@ -143,6 +156,65 @@ void Application::drawNodeText(const NodeVisual& node) const {
         nodeTextColor.green,
         nodeTextColor.blue,
         nodeTextColor.alpha);
+}
+
+void Application::drawDirectionalPointer(
+    float sourceX,
+    float sourceY,
+    float destinationX,
+    float destinationY) const {
+    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
+    constexpr float lineHalfWidth = 5.0f;
+    constexpr float arrowLength = 28.0f;
+    constexpr float arrowHalfWidth = 16.0f;
+
+    const float deltaX = destinationX - sourceX;
+    const float deltaY = destinationY - sourceY;
+    const float length = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+    if (length <= arrowLength) {
+        return;
+    }
+
+    const float directionX = deltaX / length;
+    const float directionY = deltaY / length;
+    const float perpendicularX = -directionY;
+    const float perpendicularY = directionX;
+    const float shaftEndX = destinationX - directionX * arrowLength;
+    const float shaftEndY = destinationY - directionY * arrowLength;
+
+    const float vertices[] = {
+        toNormalizedDeviceX(sourceX + perpendicularX * lineHalfWidth),
+        toNormalizedDeviceY(sourceY + perpendicularY * lineHalfWidth),
+        toNormalizedDeviceX(shaftEndX + perpendicularX * lineHalfWidth),
+        toNormalizedDeviceY(shaftEndY + perpendicularY * lineHalfWidth),
+        toNormalizedDeviceX(shaftEndX - perpendicularX * lineHalfWidth),
+        toNormalizedDeviceY(shaftEndY - perpendicularY * lineHalfWidth),
+        toNormalizedDeviceX(sourceX + perpendicularX * lineHalfWidth),
+        toNormalizedDeviceY(sourceY + perpendicularY * lineHalfWidth),
+        toNormalizedDeviceX(shaftEndX - perpendicularX * lineHalfWidth),
+        toNormalizedDeviceY(shaftEndY - perpendicularY * lineHalfWidth),
+        toNormalizedDeviceX(sourceX - perpendicularX * lineHalfWidth),
+        toNormalizedDeviceY(sourceY - perpendicularY * lineHalfWidth),
+        toNormalizedDeviceX(destinationX),
+        toNormalizedDeviceY(destinationY),
+        toNormalizedDeviceX(shaftEndX + perpendicularX * arrowHalfWidth),
+        toNormalizedDeviceY(shaftEndY + perpendicularY * arrowHalfWidth),
+        toNormalizedDeviceX(shaftEndX - perpendicularX * arrowHalfWidth),
+        toNormalizedDeviceY(shaftEndY - perpendicularY * arrowHalfWidth),
+    };
+
+    m_ColorShader->use();
+    m_ColorShader->setColor(
+        pointerColor.red,
+        pointerColor.green,
+        pointerColor.blue,
+        pointerColor.alpha);
+    glBindVertexArray(m_RectangleVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, 9);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void Application::drawCircle(float centerX, float centerY, float radius, const Color& color) const {

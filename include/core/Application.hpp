@@ -36,6 +36,7 @@ private:
     void createRectangleRenderer();
     void drawNodeCard(const NodeVisual& node) const;
     void drawNodeText(const NodeVisual& node) const;
+    void drawDirectionalPointer(float sourceX, float sourceY, float destinationX, float destinationY) const;
     void drawCircle(float centerX, float centerY, float radius, const Color& color) const;
     void drawRectangle(const render::Rectangle& rectangle, const Color& color) const;
 
@@ -44,7 +45,8 @@ private:
     std::unique_ptr<TextRenderer> m_RobotoMonoValueTextRenderer;
     std::unique_ptr<TextRenderer> m_RobotoMonoPointerTextRenderer;
     std::unique_ptr<TextRenderer> m_RobotoRegularTextRenderer;
-    NodeVisual m_DemoNode;
+    NodeVisual m_SourceNode;
+    NodeVisual m_DestinationNode;
     unsigned int m_RectangleVertexArray = 0;
     unsigned int m_RectangleVertexBuffer = 0;
 };
