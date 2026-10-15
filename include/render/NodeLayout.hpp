@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 namespace game::render {
 
 struct Rectangle {
@@ -49,6 +51,25 @@ inline NodeLayout makeNodeLayout(float x, float y) {
             referenceDockRadius,
         },
         .outputSocket = {x + NODE_CARD_WIDTH + socketOffsetX, y + socketY, socketRadius},
+    };
+}
+
+inline Rectangle clampCardToCanvas(
+    float x,
+    float y,
+    float canvasWidth,
+    float canvasHeight) {
+    return {
+        .x = std::clamp(
+            x,
+            -NODE_CARD_WIDTH / 2.0f,
+            canvasWidth - (NODE_CARD_WIDTH / 2.0f)),
+        .y = std::clamp(
+            y,
+            -NODE_CARD_HEIGHT / 2.0f,
+            canvasHeight - (NODE_CARD_HEIGHT / 2.0f)),
+        .width = NODE_CARD_WIDTH,
+        .height = NODE_CARD_HEIGHT,
     };
 }
 

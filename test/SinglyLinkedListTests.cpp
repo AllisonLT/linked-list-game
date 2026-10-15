@@ -185,6 +185,23 @@ void testDefinesNodeLayout() {
         "output socket protrudes from the card edge");
 }
 
+void testClampsCardCenterToCanvas() {
+    const auto clamped = game::render::clampCardToCanvas(
+        -500.0f,
+        2000.0f,
+        1920.0f,
+        1080.0f);
+
+    require(
+        clamped.x == -game::render::NODE_CARD_WIDTH / 2.0f &&
+            clamped.y == 1080.0f - (game::render::NODE_CARD_HEIGHT / 2.0f),
+        "card center remains within canvas when dragged beyond an edge");
+    require(
+        clamped.x + (clamped.width / 2.0f) == 0.0f &&
+            clamped.y + (clamped.height / 2.0f) == 1080.0f,
+        "clamped card center lies on the canvas boundary");
+}
+
 } // namespace
 
 int main() {
@@ -197,4 +214,5 @@ int main() {
     testNodeViewStateIsSeparateFromListData();
     testCardHitTesting();
     testDefinesNodeLayout();
+    testClampsCardCenterToCanvas();
 }

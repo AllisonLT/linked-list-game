@@ -158,8 +158,13 @@ void Application::updateInteraction() {
             view::NodeViewState& node = findNodeVisual(
                 m_DragState->node.example->nodes,
                 m_DragState->node.id);
-            node.x = mouse.x - m_DragState->offsetX;
-            node.y = mouse.y - m_DragState->offsetY;
+            const render::Rectangle clampedCard = render::clampCardToCanvas(
+                mouse.x - m_DragState->offsetX,
+                mouse.y - m_DragState->offsetY,
+                Window::TARGET_WIDTH,
+                Window::TARGET_HEIGHT);
+            node.x = clampedCard.x;
+            node.y = clampedCard.y;
         }
     }
 
