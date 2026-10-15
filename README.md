@@ -7,8 +7,12 @@ So far, not a single drop of manual code. XD
 ### Run Test
 
 ```bash
-python .\run.py
+Coming soO〇Oon~
 ```
+
+<!-- Add the codeblock: `python .\run.py` after Milestone 06 -->
+
+Temporarily disabled because the aesthetics are still in early stage. The sandbox will be available once the standard rendering framework is completed.
 
 ### Text Fonts
 
