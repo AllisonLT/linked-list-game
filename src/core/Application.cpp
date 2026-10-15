@@ -2,14 +2,18 @@
 #include "core/Input.hpp"
 #include <cmath>
 #include <iostream>
+#include <optional>
 #include <sstream>
+#include <stdexcept>
+#include <string_view>
 #include <vector>
 
 namespace game::core {
 namespace {
 
 constexpr float SOURCE_NODE_X = 500.0f;
-constexpr float DESTINATION_NODE_X = 1150.0f;
+constexpr float MIDDLE_NODE_X = 830.0f;
+constexpr float DESTINATION_NODE_X = 1160.0f;
 constexpr float NODE_CARD_Y = 440.0f;
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
@@ -39,16 +43,21 @@ Application::Application() {
     m_RobotoRegularTextRenderer = std::make_unique<TextRenderer>(
         "assets/fonts/Roboto-Regular.ttf",
         32);
-    m_SourceNode = {
-        .layout = render::makeNodeLayout(SOURCE_NODE_X, NODE_CARD_Y),
-        .value = "42",
-        .nextLabel = "next",
+    const model::NodeId nodeA = m_List.emplaceNode("A");
+    const model::NodeId nodeB = m_List.emplaceNode("B");
+    const model::NodeId nodeC = m_List.emplaceNode("C");
+    m_List.setHead(nodeA);
+    m_List.setNext(nodeA, nodeB);
+    m_List.setNext(nodeB, nodeC);
+
+    m_NodeVisuals = {
+        {.id = nodeA, .layout = render::makeNodeLayout(SOURCE_NODE_X, NODE_CARD_Y)},
+        {.id = nodeB, .layout = render::makeNodeLayout(MIDDLE_NODE_X, NODE_CARD_Y)},
+        {.id = nodeC, .layout = render::makeNodeLayout(DESTINATION_NODE_X, NODE_CARD_Y)},
     };
-    m_DestinationNode = {
-        .layout = render::makeNodeLayout(DESTINATION_NODE_X, NODE_CARD_Y),
-        .value = "73",
-        .nextLabel = "next",
-    };
+    if (!m_List.isConsistent()) {
+        throw std::logic_error("The fixed linked-list example is inconsistent");
+    }
     createRectangleRenderer();
 }
 
@@ -86,16 +95,13 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
-    drawDirectionalPointer(
-        m_SourceNode.layout.outputSocket.centerX,
-        m_SourceNode.layout.outputSocket.centerY,
-        m_DestinationNode.layout.card.x,
-        m_DestinationNode.layout.card.y + m_DestinationNode.layout.card.height / 2.0f);
-    drawNodeCard(m_SourceNode);
-    drawNodeCard(m_DestinationNode);
-    drawNodeText(m_SourceNode);
-    drawNodeText(m_DestinationNode);
-    drawNullEndpoint(m_DestinationNode);
+    drawListPointers();
+    drawHeadIndicator();
+    for (const NodeVisual& node : m_NodeVisuals) {
+        drawNodeCard(node);
+        drawNodeText(node);
+    }
+    drawNullEndpoints();
     m_RobotoRegularTextRenderer->draw(
         "Static list preview",
         80.0f,
@@ -134,15 +140,17 @@ void Application::drawNodeCard(const NodeVisual& node) const {
 
 void Application::drawNodeText(const NodeVisual& node) const {
     constexpr Color nodeTextColor{0.92f, 0.96f, 1.0f};
+    constexpr std::string_view nextLabel = "next";
+    const std::string& value = m_List.node(node.id).value;
     const float valueX = node.layout.card.x +
                          (node.layout.card.width -
-                          m_RobotoMonoValueTextRenderer->measureWidth(node.value)) /
+                          m_RobotoMonoValueTextRenderer->measureWidth(value)) /
                              2.0f;
     const float pointerLabelX = node.layout.outputSocket.centerX -
-                                m_RobotoMonoPointerTextRenderer->measureWidth(node.nextLabel) / 2.0f;
+                                m_RobotoMonoPointerTextRenderer->measureWidth(nextLabel) / 2.0f;
 
     m_RobotoMonoValueTextRenderer->draw(
-        node.value,
+        value,
         valueX,
         node.layout.card.y + (node.layout.card.height + 32.0f) / 2.0f,
         nodeTextColor.red,
@@ -150,13 +158,59 @@ void Application::drawNodeText(const NodeVisual& node) const {
         nodeTextColor.blue,
         nodeTextColor.alpha);
     m_RobotoMonoPointerTextRenderer->draw(
-        node.nextLabel,
+        nextLabel,
         pointerLabelX,
         node.layout.outputSocket.centerY + 7.0f,
         nodeTextColor.red,
         nodeTextColor.green,
         nodeTextColor.blue,
         nodeTextColor.alpha);
+}
+
+void Application::drawListPointers() const {
+    for (const NodeVisual& source : m_NodeVisuals) {
+        const std::optional<model::NodeId> destinationId = m_List.node(source.id).next;
+        if (!destinationId) {
+            continue;
+        }
+
+        const NodeVisual& destination = findNodeVisual(*destinationId);
+        drawDirectionalPointer(
+            source.layout.outputSocket.centerX,
+            source.layout.outputSocket.centerY,
+            destination.layout.card.x,
+            destination.layout.card.y + destination.layout.card.height / 2.0f);
+    }
+}
+
+void Application::drawHeadIndicator() const {
+    constexpr Color labelColor{0.07f, 0.10f, 0.15f};
+    constexpr std::string_view headLabel = "head";
+
+    const std::optional<model::NodeId> headId = m_List.head();
+    if (!headId) {
+        return;
+    }
+
+    const NodeVisual& head = findNodeVisual(*headId);
+    const float centerX = head.layout.card.x + head.layout.card.width / 2.0f;
+    drawDirectionalPointer(centerX, head.layout.card.y - 80.0f, centerX, head.layout.card.y);
+    m_RobotoRegularTextRenderer->draw(
+        headLabel,
+        centerX - m_RobotoRegularTextRenderer->measureWidth(headLabel) / 2.0f,
+        head.layout.card.y - 100.0f,
+        labelColor.red,
+        labelColor.green,
+        labelColor.blue,
+        labelColor.alpha);
+}
+
+void Application::drawNullEndpoints() const {
+    for (const NodeVisual& node : m_NodeVisuals) {
+        if (!m_List.node(node.id).next) {
+            drawNullEndpoint(node);
+        }
+    }
 }
 
 void Application::drawDirectionalPointer(
@@ -289,6 +343,15 @@ void Application::drawRectangle(const render::Rectangle& rectangle, const Color&
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+const Application::NodeVisual& Application::findNodeVisual(model::NodeId id) const {
+    for (const NodeVisual& node : m_NodeVisuals) {
+        if (node.id == id) {
+            return node;
+        }
+    }
+    throw std::logic_error("Missing layout for linked-list node");
 }
 
 int Application::run() {

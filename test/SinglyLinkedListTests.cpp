@@ -83,6 +83,23 @@ void testSupportsUnicodePayloads() {
     require(list.node(node).value == U"\U0001F680", "generic node values preserve Unicode data");
 }
 
+void testThreeNodeExample() {
+    game::model::SinglyLinkedList<std::string> list;
+    const auto nodeA = list.emplaceNode("A");
+    const auto nodeB = list.emplaceNode("B");
+    const auto nodeC = list.emplaceNode("C");
+
+    list.setHead(nodeA);
+    list.setNext(nodeA, nodeB);
+    list.setNext(nodeB, nodeC);
+
+    require(list.head() == nodeA, "head points to node A");
+    require(list.node(nodeA).next == nodeB, "node A points to node B");
+    require(list.node(nodeB).next == nodeC, "node B points to node C");
+    require(!list.node(nodeC).next, "node C has a null endpoint");
+    require(list.isConsistent(), "three-node example is consistent");
+}
+
 void testDefinesNodeLayout() {
     const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
 
@@ -111,5 +128,6 @@ int main() {
     testNullLinksAndDeletion();
     testRejectsUnknownNodes();
     testSupportsUnicodePayloads();
+    testThreeNodeExample();
     testDefinesNodeLayout();
 }
