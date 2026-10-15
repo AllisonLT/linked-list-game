@@ -17,6 +17,7 @@ public:
     static glm::vec2 getMousePosition();
     static bool isMouseButtonDown(int button);
     static bool isMouseButtonJustPressed(int button);
+    static bool isMouseButtonJustReleased(int button);
     static bool isKeyDown(int key);
     static bool isKeyJustPressed(int key);
     static bool isMouseInsideCanvas();

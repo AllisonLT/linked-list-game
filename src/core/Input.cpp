@@ -32,6 +32,11 @@ bool Input::isMouseButtonJustPressed(int button) {
     return s_MouseButtonsCurrent[button] && !s_MouseButtonsPrevious[button];
 }
 
+bool Input::isMouseButtonJustReleased(int button) {
+    if (button < 0 || button > GLFW_MOUSE_BUTTON_LAST) return false;
+    return !s_MouseButtonsCurrent[button] && s_MouseButtonsPrevious[button];
+}
+
 bool Input::isKeyDown(int key) {
     if (key < 0 || key > GLFW_KEY_LAST) return false;
     return s_KeysCurrent[key];

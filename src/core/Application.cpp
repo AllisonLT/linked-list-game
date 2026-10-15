@@ -1,5 +1,6 @@
 #include "core/Application.hpp"
 #include "core/Input.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <optional>
@@ -74,6 +75,12 @@ Application::Application() {
     if (!m_CorrectExample.list.isConsistent() || !m_IncorrectExample.list.isConsistent()) {
         throw std::logic_error("A fixed linked-list example is inconsistent");
     }
+    for (const view::NodeViewState& node : m_CorrectExample.nodes) {
+        m_DrawOrder.push_back({.example = &m_CorrectExample, .id = node.id});
+    }
+    for (const view::NodeViewState& node : m_IncorrectExample.nodes) {
+        m_DrawOrder.push_back({.example = &m_IncorrectExample, .id = node.id});
+    }
     createRectangleRenderer();
 }
 
@@ -87,6 +94,8 @@ Application::~Application() {
 }
 
 void Application::processInput() {
+    updateInteraction();
+
     if (Input::isKeyJustPressed(GLFW_KEY_ESCAPE)) {
         glfwSetWindowShouldClose(m_Window->getNativeWindow(), true);
     }
@@ -111,9 +120,58 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
-    drawListExample(m_CorrectExample);
-    drawListExample(m_IncorrectExample);
+    drawExampleConnections(m_CorrectExample);
+    drawExampleConnections(m_IncorrectExample);
+    for (const NodeReference& reference : m_DrawOrder) {
+        const view::NodeViewState& node = findNodeVisual(reference.example->nodes, reference.id);
+        drawNodeCard(*reference.example, node);
+        drawNodeText(*reference.example, node);
+    }
     m_Window->endRender();
+}
+
+void Application::updateInteraction() {
+    const glm::vec2 mouse = Input::getMousePosition();
+    if (Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+        const std::optional<NodeReference> hitNode = findTopmostCard(mouse.x, mouse.y);
+        if (hitNode) {
+            bringToFront(*hitNode);
+            m_SelectedNode = *hitNode;
+            view::NodeViewState& node = findNodeVisual(hitNode->example->nodes, hitNode->id);
+            m_DragState = {
+                .node = *hitNode,
+                .offsetX = mouse.x - node.x,
+                .offsetY = mouse.y - node.y,
+            };
+        } else {
+            m_SelectedNode.reset();
+            m_DragState.reset();
+        }
+    }
+
+    if (m_DragState) {
+        if (Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
+            m_DragState.reset();
+        } else if (Input::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+            view::NodeViewState& node = findNodeVisual(
+                m_DragState->node.example->nodes,
+                m_DragState->node.id);
+            node.x = mouse.x - m_DragState->offsetX;
+            node.y = mouse.y - m_DragState->offsetY;
+        }
+    }
+
+    updateHoveredNode();
+}
+
+void Application::updateHoveredNode() {
+    if (!Input::isMouseInsideCanvas()) {
+        m_HoveredNode.reset();
+        return;
+    }
+
+    const glm::vec2 mouse = Input::getMousePosition();
+    m_HoveredNode = findTopmostCard(mouse.x, mouse.y);
 }
 
 void Application::createRectangleRenderer() {
@@ -130,16 +188,42 @@ void Application::createRectangleRenderer() {
     glBindVertexArray(0);
 }
 
-void Application::drawNodeCard(const view::NodeViewState& node) const {
+void Application::drawNodeCard(
+    const ListExample& example,
+    const view::NodeViewState& node) const {
     constexpr Color nodeColor{0.07f, 0.10f, 0.15f};
+    constexpr Color hoverGlow{0.18f, 0.58f, 0.95f, 0.32f};
+    constexpr Color selectedGlow{0.08f, 0.37f, 0.88f, 0.52f};
+    constexpr Color selectedNodeColor{0.05f, 0.15f, 0.29f};
     const render::NodeLayout layout = layoutFor(node);
 
-    drawRectangle(layout.card, nodeColor);
+    if (isNodeSelected(example, node.id)) {
+        drawRectangle(
+            {layout.card.x - 16.0f, layout.card.y - 16.0f, layout.card.width + 32.0f, layout.card.height + 32.0f},
+            selectedGlow);
+        drawCircle(
+            layout.outputSocket.centerX,
+            layout.outputSocket.centerY,
+            layout.outputSocket.radius + 16.0f,
+            selectedGlow);
+    } else if (isNodeHovered(example, node.id)) {
+        drawRectangle(
+            {layout.card.x - 8.0f, layout.card.y - 8.0f, layout.card.width + 16.0f, layout.card.height + 16.0f},
+            hoverGlow);
+        drawCircle(
+            layout.outputSocket.centerX,
+            layout.outputSocket.centerY,
+            layout.outputSocket.radius + 8.0f,
+            hoverGlow);
+    }
+
+    const Color& cardColor = isNodeSelected(example, node.id) ? selectedNodeColor : nodeColor;
+    drawRectangle(layout.card, cardColor);
     drawCircle(
         layout.outputSocket.centerX,
         layout.outputSocket.centerY,
         layout.outputSocket.radius,
-        nodeColor);
+        cardColor);
 }
 
 void Application::drawNodeText(
@@ -174,15 +258,11 @@ void Application::drawNodeText(
         nodeTextColor.alpha);
 }
 
-void Application::drawListExample(const ListExample& example) const {
+void Application::drawExampleConnections(const ListExample& example) const {
     constexpr Color labelColor{0.07f, 0.10f, 0.15f};
 
     drawListPointers(example);
     drawHeadIndicator(example);
-    for (const view::NodeViewState& node : example.nodes) {
-        drawNodeCard(node);
-        drawNodeText(example, node);
-    }
     drawNullEndpoints(example);
     m_RobotoRegularTextRenderer->draw(
         example.description,
@@ -376,8 +456,53 @@ void Application::drawRectangle(const render::Rectangle& rectangle, const Color&
     glBindVertexArray(0);
 }
 
+void Application::bringToFront(const NodeReference& node) {
+    const auto iterator = std::find_if(
+        m_DrawOrder.begin(),
+        m_DrawOrder.end(),
+        [&node](const NodeReference& candidate) {
+            return candidate.example == node.example && candidate.id == node.id;
+        });
+    if (iterator == m_DrawOrder.end()) {
+        throw std::logic_error("Missing node from draw order");
+    }
+
+    const NodeReference selected = *iterator;
+    m_DrawOrder.erase(iterator);
+    m_DrawOrder.push_back(selected);
+}
+
+std::optional<Application::NodeReference> Application::findTopmostCard(float x, float y) const {
+    for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        const view::NodeViewState& node = findNodeVisual(iterator->example->nodes, iterator->id);
+        if (render::isPointInsideCard(node, x, y)) {
+            return *iterator;
+        }
+    }
+    return std::nullopt;
+}
+
+bool Application::isNodeHovered(const ListExample& example, model::NodeId id) const {
+    return m_HoveredNode && m_HoveredNode->example == &example && m_HoveredNode->id == id;
+}
+
+bool Application::isNodeSelected(const ListExample& example, model::NodeId id) const {
+    return m_SelectedNode && m_SelectedNode->example == &example && m_SelectedNode->id == id;
+}
+
 render::NodeLayout Application::layoutFor(const view::NodeViewState& node) {
     return render::makeNodeLayout(node.x, node.y);
+}
+
+view::NodeViewState& Application::findNodeVisual(
+    std::vector<view::NodeViewState>& nodes,
+    model::NodeId id) {
+    for (view::NodeViewState& node : nodes) {
+        if (node.id == id) {
+            return node;
+        }
+    }
+    throw std::logic_error("Missing layout for linked-list node");
 }
 
 const view::NodeViewState& Application::findNodeVisual(

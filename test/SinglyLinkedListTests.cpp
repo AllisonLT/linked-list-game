@@ -1,3 +1,4 @@
+#include "render/CardHitTest.hpp"
 #include "model/SinglyLinkedList.hpp"
 #include "render/NodeLayout.hpp"
 #include "view/NodeViewState.hpp"
@@ -129,6 +130,31 @@ void testNodeViewStateIsSeparateFromListData() {
     require(viewState.x == 350.0f && viewState.y == 475.0f, "view state stores card position");
 }
 
+void testCardHitTesting() {
+    const game::view::NodeViewState node{
+        .id = game::model::NodeId{1},
+        .x = 100.0f,
+        .y = 200.0f,
+    };
+
+    require(game::render::isPointInsideCard(node, 100.0f, 200.0f), "card includes its top-left edge");
+    require(
+        game::render::isPointInsideCard(
+            node,
+            100.0f + game::render::NODE_CARD_WIDTH,
+            200.0f + game::render::NODE_CARD_HEIGHT),
+        "card includes its bottom-right edge");
+    require(game::render::isPointInsideCard(node, 200.0f, 300.0f), "card includes interior points");
+    require(!game::render::isPointInsideCard(node, 99.0f, 200.0f), "card excludes points left of its body");
+    require(!game::render::isPointInsideCard(node, 100.0f, 401.0f), "card excludes points below its body");
+    require(
+        !game::render::isPointInsideCard(
+            node,
+            100.0f + game::render::NODE_CARD_WIDTH + 10.0f,
+            300.0f),
+        "card excludes the next pointer");
+}
+
 void testDefinesNodeLayout() {
     const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
 
@@ -160,5 +186,6 @@ int main() {
     testThreeNodeExample();
     testDisconnectedThreeNodeExample();
     testNodeViewStateIsSeparateFromListData();
+    testCardHitTesting();
     testDefinesNodeLayout();
 }
