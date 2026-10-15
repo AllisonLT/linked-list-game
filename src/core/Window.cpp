@@ -60,18 +60,33 @@ void Window::pollEvents() {
 }
 
 void Window::beginRender() {
-    // Clear the physical window so the letterbox area matches the canvas background.
+    constexpr float windowBackgroundRed = 0.08f;
+    constexpr float windowBackgroundGreen = 0.12f;
+    constexpr float windowBackgroundBlue = 0.17f;
+    constexpr float canvasBackgroundRed = 0.68f;
+    constexpr float canvasBackgroundGreen = 0.85f;
+    constexpr float canvasBackgroundBlue = 0.95f;
+
+    // Clear the physical window first so letterbox areas remain visually distinct.
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     glViewport(0, 0, fbWidth, fbHeight);
-    glClearColor(0.68f, 0.85f, 0.95f, 1.0f);
+    glClearColor(
+        windowBackgroundRed,
+        windowBackgroundGreen,
+        windowBackgroundBlue,
+        1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Scissor test to only clear the 16:9 canvas region
+    // Clear only the valid 16:9 canvas region with the game background.
     glViewport(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height);
     glEnable(GL_SCISSOR_TEST);
     glScissor(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height);
-    glClearColor(0.68f, 0.85f, 0.95f, 1.0f);
+    glClearColor(
+        canvasBackgroundRed,
+        canvasBackgroundGreen,
+        canvasBackgroundBlue,
+        1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
 }
