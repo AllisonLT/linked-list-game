@@ -14,10 +14,12 @@ Coming soO〇Oon~
 
 Temporarily disabled because the aesthetics are still in early stage. The sandbox will be available once the standard rendering framework is completed.
 
-### Text Fonts
+### Third-Party Resources
 
 The application uses the Roboto Regular font, licensed under Apache License 2.0. Its license is at
 `assets/fonts/Roboto-Regular-LICENSE.txt`.
 
 It also uses Roboto Mono, licensed under SIL Open Font License 1.1. Its license is at
 `assets/fonts/RobotoMono-LICENSE.txt`.
+
+stb_image.h and GLAD lie in the MIT / Public Domain
