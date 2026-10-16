@@ -1,172 +1,151 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- Dark slate metallic body fill -->
-    <linearGradient id="slateTexture" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#475569" />
-      <stop offset="30%" stop-color="#334155" />
-      <stop offset="70%" stop-color="#1e293b" />
-      <stop offset="100%" stop-color="#0f172a" />
+    <!-- Dark slate body fill matching in-game cards -->
+    <linearGradient id="nodeBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a374a" />
+      <stop offset="40%" stop-color="#1b2433" />
+      <stop offset="100%" stop-color="#101722" />
     </linearGradient>
 
-    <!-- Electric cyan glow filter -->
-    <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="7" result="blur" />
+    <!-- Electric sky-blue neon glow -->
+    <filter id="cyanGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
       <feMerge>
         <feMergeNode in="blur" />
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
 
-    <!-- Deep drop shadow for piece depth -->
-    <filter id="pieceShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="2" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.65" />
+    <!-- Drop shadow for the piece -->
+    <filter id="pieceShadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="4" dy="18" stdDeviation="16" flood-color="#000000" flood-opacity="0.8" />
     </filter>
 
-    <!-- Asterisk drop shadow onto the piece below -->
+    <!-- Drop shadow for the pointer asterisk badge -->
     <filter id="badgeShadow" x="-40%" y="-40%" width="180%" height="180%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.75" />
+      <feDropShadow dx="2" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.9" />
     </filter>
   </defs>
 
-  <!-- ==================== TILTED JIGSAW PIECE ==================== -->
-  <g transform="translate(268, 272) rotate(16)" filter="url(#pieceShadow)">
-    
-    <!-- Outer Cyan Neon Border -->
-    <path d="
-      M -114,-105
-      L -44,-105
-      C -30,-105 -22,-92 -25,-74
-      C -32,-48 32,-48 25,-74
-      C 22,-92 30,-105 44,-105
-      L 114,-105
-      C 124,-105 130,-99 130,-89
-      L 130,-44
-      C 130,-30 143,-22 161,-25
-      C 187,-32 187,32 161,25
-      C 143,22 130,30 130,44
-      L 130,89
-      C 130,99 124,105 114,105
-      L 44,105
-      C 30,105 22,92 25,74
-      C 32,48 -32,48 -25,74
-      C -22,92 -30,105 -44,105
-      L -114,105
-      C -124,105 -130,99 -130,89
-      L -130,44
-      C -130,30 -143,22 -161,25
-      C -187,32 -187,-32 -161,-25
-      C -143,-22 -130,-30 -130,-44
-      L -130,-89
-      C -130,-99 -124,-105 -114,-105
-      Z"
-      fill="none"
-      stroke="#38bdf8"
-      stroke-width="14"
-      stroke-linejoin="round"
-      filter="url(#cyanGlow)"
-    />
+  <!-- ==================== MAXIMIZED COMPOSITION ==================== -->
+  <g transform="translate(256, 272) scale(1.68)">
 
-    <!-- Solid Piece Body -->
-    <path d="
-      M -114,-105
-      L -44,-105
-      C -30,-105 -22,-92 -25,-74
-      C -32,-48 32,-48 25,-74
-      C 22,-92 30,-105 44,-105
-      L 114,-105
-      C 124,-105 130,-99 130,-89
-      L 130,-44
-      C 130,-30 143,-22 161,-25
-      C 187,-32 187,32 161,25
-      C 143,22 130,30 130,44
-      L 130,89
-      C 130,99 124,105 114,105
-      L 44,105
-      C 30,105 22,92 25,74
-      C 32,48 -32,48 -25,74
-      C -22,92 -30,105 -44,105
-      L -114,105
-      C -124,105 -130,99 -130,89
-      L -130,44
-      C -130,30 -143,22 -161,25
-      C -187,32 -187,-32 -161,-25
-      C -143,-22 -130,-30 -130,-44
-      L -130,-89
-      C -130,-99 -124,-105 -114,-105
-      Z"
-      fill="url(#slateTexture)"
-      stroke="#7dd3fc"
-      stroke-width="2.5"
-      stroke-linejoin="round"
-    />
+    <!-- Reclined 15° to the right -->
+    <g transform="rotate(15)" filter="url(#pieceShadow)">
+      
+      <!-- ==================== OUTER NEON GLOW ==================== -->
+      <!-- 1:1 Square Body (160x160) with R=32 semicircles (48:64:48 ratio) -->
+      <path d="
+        M -80,-80
+        L -32,-80
+        A 32 32 0 0 0 32,-80
+        L 80,-80
+        L 80,-32
+        A 32 32 0 0 1 80,32
+        L 80,80
+        L 32,80
+        A 32 32 0 0 0 -32,80
+        L -80,80
+        L -80,32
+        A 32 32 0 0 1 -80,-32
+        Z"
+        fill="none"
+        stroke="#38bdf8"
+        stroke-width="12"
+        stroke-linejoin="round"
+        filter="url(#cyanGlow)"
+      />
 
-    <!-- Center Engraving: Node_T -->
-    <text
-      x="0"
-      y="11"
-      text-anchor="middle"
-      dominant-baseline="central"
-      fill="#f8fafc"
-      font-family="'Consolas', 'JetBrains Mono', 'Fira Code', monospace"
-      font-size="34"
-      font-weight="700"
-      letter-spacing="2px"
-      opacity="0.92"
-    >Node_T</text>
-  </g>
+      <!-- ==================== SOLID SQUARE PIECE BODY ==================== -->
+      <path d="
+        M -80,-80
+        L -32,-80
+        A 32 32 0 0 0 32,-80
+        L 80,-80
+        L 80,-32
+        A 32 32 0 0 1 80,32
+        L 80,80
+        L 32,80
+        A 32 32 0 0 0 -32,80
+        L -80,80
+        L -80,32
+        A 32 32 0 0 1 -80,-32
+        Z"
+        fill="url(#nodeBodyGrad)"
+        stroke="#60a5fa"
+        stroke-width="2.8"
+        stroke-linejoin="round"
+      />
 
-  <!-- ==================== UNIFORM 5-SPOKE ASTERISK (*) ==================== -->
-  <!-- Radiating at exactly 72-degree intervals for clean typography aesthetics -->
-  <g transform="translate(136, 150)" filter="url(#badgeShadow)">
-    
-    <!-- Pass 1: Cyan Outline / Rim Glow -->
-    <path d="
-      M 0,0 L 0,-56
-      M 0,0 L 53.3,-17.3
-      M 0,0 L 32.9,45.3
-      M 0,0 L -32.9,45.3
-      M 0,0 L -53.3,-17.3
-    "
-    fill="none"
-    stroke="#38bdf8"
-    stroke-width="32"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    filter="url(#cyanGlow)"
-    />
+      <!-- Center Engraved Node_T -->
+      <text
+        x="0"
+        y="9"
+        text-anchor="middle"
+        dominant-baseline="central"
+        fill="#f8fafc"
+        font-family="'Consolas', 'JetBrains Mono', 'Fira Code', 'Segoe UI', monospace"
+        font-size="28"
+        font-weight="800"
+        letter-spacing="1.8px"
+        filter="drop-shadow(0 2px 4px rgba(0,0,0,0.85))"
+      >Node_T</text>
 
-    <!-- Pass 2: Identical Slate-Blue Gradient Core -->
-    <path d="
-      M 0,0 L 0,-56
-      M 0,0 L 53.3,-17.3
-      M 0,0 L 32.9,45.3
-      M 0,0 L -32.9,45.3
-      M 0,0 L -53.3,-17.3
-    "
-    fill="none"
-    stroke="url(#slateTexture)"
-    stroke-width="22"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    />
+      <!-- ==================== 5-SPOKE POINTER ASTERISK (*) ==================== -->
+      <!-- Anchored above the top-left shoulder/corner -->
+      <g transform="translate(-86, -72) rotate(-8)" filter="url(#badgeShadow)">
+        
+        <!-- Cyan Neon Rim -->
+        <path d="
+          M 0,0 L 0,-46
+          M 0,0 L 43.7,-14.2
+          M 0,0 L 27.0,37.2
+          M 0,0 L -27.0,37.2
+          M 0,0 L -43.7,-14.2
+        "
+        fill="none"
+        stroke="#38bdf8"
+        stroke-width="26"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        filter="url(#cyanGlow)"
+        />
 
-    <!-- Center Hub Solid Fill -->
-    <circle cx="0" cy="0" r="11" fill="url(#slateTexture)" />
+        <!-- Matching Slate Core -->
+        <path d="
+          M 0,0 L 0,-46
+          M 0,0 L 43.7,-14.2
+          M 0,0 L 27.0,37.2
+          M 0,0 L -27.0,37.2
+          M 0,0 L -43.7,-14.2
+        "
+        fill="none"
+        stroke="url(#nodeBodyGrad)"
+        stroke-width="17"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        />
 
-    <!-- Pass 3: Crisp Inner Rim Highlight -->
-    <path d="
-      M 0,0 L 0,-56
-      M 0,0 L 53.3,-17.3
-      M 0,0 L 32.9,45.3
-      M 0,0 L -32.9,45.3
-      M 0,0 L -53.3,-17.3
-    "
-    fill="none"
-    stroke="#7dd3fc"
-    stroke-width="2.5"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    opacity="0.65"
-    />
+        <!-- Center Hub -->
+        <circle cx="0" cy="0" r="9.5" fill="url(#nodeBodyGrad)" />
+
+        <!-- Crisp Inner Rim Highlight -->
+        <path d="
+          M 0,0 L 0,-46
+          M 0,0 L 43.7,-14.2
+          M 0,0 L 27.0,37.2
+          M 0,0 L -27.0,37.2
+          M 0,0 L -43.7,-14.2
+        "
+        fill="none"
+        stroke="#7dd3fc"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity="0.85"
+        />
+      </g>
+    </g>
+
   </g>
 </svg>
