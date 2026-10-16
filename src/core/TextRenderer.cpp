@@ -58,16 +58,21 @@ TextRenderer::TextRenderer(const std::filesystem::path& fontPath, unsigned int p
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            m_Glyphs.emplace(
-                character,
-                Glyph{
-                    .texture = texture,
-                    .width = static_cast<int>(m_Face->glyph->bitmap.width),
-                    .height = static_cast<int>(m_Face->glyph->bitmap.rows),
-                    .bearingX = m_Face->glyph->bitmap_left,
-                    .bearingY = m_Face->glyph->bitmap_top,
-                    .advance = static_cast<unsigned int>(m_Face->glyph->advance.x),
-                });
+            try {
+                m_Glyphs.emplace(
+                    character,
+                    Glyph{
+                        .texture = texture,
+                        .width = static_cast<int>(m_Face->glyph->bitmap.width),
+                        .height = static_cast<int>(m_Face->glyph->bitmap.rows),
+                        .bearingX = m_Face->glyph->bitmap_left,
+                        .bearingY = m_Face->glyph->bitmap_top,
+                        .advance = static_cast<unsigned int>(m_Face->glyph->advance.x),
+                    });
+            } catch (...) {
+                glDeleteTextures(1, &texture);
+                throw;
+            }
         }
         glBindTexture(GL_TEXTURE_2D, 0);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
