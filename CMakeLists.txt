@@ -87,6 +87,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
 target_include_directories(${PROJECT_NAME} PRIVATE
     include
     external/glad/include
+    external/stb
 )
 
 # Link GLFW, GLAD, GLM, and Windows OpenGL driver

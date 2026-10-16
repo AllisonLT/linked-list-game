@@ -1,3 +1,5 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include "core/Window.hpp"
 #include <iostream>
 #include <stdexcept>
@@ -18,6 +20,17 @@ Window::Window(int width, int height, const std::string& title) {
         glfwTerminate();
         throw std::runtime_error("Failed to create GLFW window");
     }
+
+    // Set runtime window and taskbar icon
+    GLFWimage icon;
+    int channels = 0;
+    icon.pixels = stbi_load("assets/icon/icon.png", &icon.width, &icon.height, &channels, 4);
+
+    if (icon.pixels) {
+        glfwSetWindowIcon(m_Window, 1, &icon);
+        stbi_image_free(icon.pixels);
+    } else
+        std::cerr << "Warning: Failed to load icon: " << stbi_failure_reason() << "\n";
 
     glfwMakeContextCurrent(m_Window);
     glfwSetWindowUserPointer(m_Window, this);
