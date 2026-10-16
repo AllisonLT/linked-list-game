@@ -14,6 +14,10 @@ Coming soO〇Oon~
 
 Temporarily disabled because the aesthetics are still in early stage. The sandbox will be available once the standard rendering framework is completed.
 
+### Credits?
+
+Arts by Gemini, code by Copilot.
+
 ### Third-Party Resources
 
 The application uses the Roboto Regular font, licensed under Apache License 2.0. Its license is at
