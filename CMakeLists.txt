@@ -66,7 +66,14 @@ file(GLOB_RECURSE APP_SOURCES
     include/*.h
 )
 
-add_executable(${PROJECT_NAME} ${APP_SOURCES})
+# For app icon on Windows
+set(APP_RESOURCES "")
+if(WIN32)
+    enable_language(RC)
+    set(APP_RESOURCES assets/icon/app.rc)
+endif()
+
+add_executable(${PROJECT_NAME} ${APP_SOURCES} ${APP_RESOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}"
