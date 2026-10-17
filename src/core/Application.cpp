@@ -282,6 +282,7 @@ void Application::updateInteraction() {
     }
 
     updateHoveredScissorsTarget();
+    updateHoveredTapeSource();
     updateHoveredTapeTarget();
     updateHoveredNode();
 }
@@ -314,6 +315,16 @@ void Application::updateHoveredTapeTarget() {
 
     const glm::vec2 mouse = Input::getMousePosition();
     m_HoveredTapeTarget = findTopmostCard(mouse.x, mouse.y);
+}
+
+void Application::updateHoveredTapeSource() {
+    if (m_HeldTool != HeldTool::Tape || !Input::isMouseInsideCanvas()) {
+        m_HoveredTapeSource.reset();
+        return;
+    }
+
+    const glm::vec2 mouse = Input::getMousePosition();
+    m_HoveredTapeSource = findTapeOutput(mouse.x, mouse.y);
 }
 
 void Application::createRectangleRenderer() {
@@ -539,23 +550,30 @@ void Application::drawNodeCard(
     constexpr Color hoverOutline{0.18f, 0.58f, 0.95f};
     constexpr Color selectedOutline{0.08f, 0.37f, 0.88f};
     constexpr Color selectedNodeColor{0.05f, 0.15f, 0.29f};
+    constexpr Color tapeSourceOutline{0.91f, 0.50f, 0.17f};
     constexpr Color tapeTargetOutline{0.96f, 0.72f, 0.24f};
     constexpr float hoverOutlineWidth = 5.0f;
     constexpr float selectedOutlineWidth = 8.0f;
+    constexpr float tapeSourceOutlineWidth = 6.0f;
     constexpr float tapeTargetOutlineWidth = 8.0f;
     const render::NodeLayout layout = layoutFor(node);
     const bool selected = isNodeSelected(example, node.id);
     const bool hovered = isNodeHovered(example, node.id);
+    const bool tapeSource = isTapeSource(example, node.id);
     const bool tapeTarget = isTapeTarget(example, node.id);
     const float outlineWidth = tapeTarget
                                    ? tapeTargetOutlineWidth
-                                   : (selected ? selectedOutlineWidth
-                                               : (hovered ? hoverOutlineWidth : 0.0f));
+                                   : (tapeSource
+                                          ? tapeSourceOutlineWidth
+                                          : (selected ? selectedOutlineWidth
+                                                      : (hovered ? hoverOutlineWidth : 0.0f)));
     const Color& cardColor = selected ? selectedNodeColor : nodeColor;
 
     if (outlineWidth > 0.0f) {
         const Color& outlineColor =
-            tapeTarget ? tapeTargetOutline : (selected ? selectedOutline : hoverOutline);
+            tapeTarget
+                ? tapeTargetOutline
+                : (tapeSource ? tapeSourceOutline : (selected ? selectedOutline : hoverOutline));
         drawNodeSilhouette(layout, outlineWidth, outlineColor);
     }
 
@@ -985,6 +1003,15 @@ std::optional<Application::NodeReference> Application::findTapeOutput(float x, f
 bool Application::isScissorsTarget(const ListExample& example, model::NodeId id) const {
     return m_HoveredScissorsTarget && m_HoveredScissorsTarget->example == &example &&
            m_HoveredScissorsTarget->id == id;
+}
+
+bool Application::isTapeSource(const ListExample& example, model::NodeId id) const {
+    const auto matches = [&example, id](const std::optional<NodeReference>& reference) {
+        return reference && reference->example == &example && reference->id == id;
+    };
+    return matches(m_HoveredTapeSource) ||
+           (m_TapeDrag && m_TapeDrag->source.example == &example &&
+            m_TapeDrag->source.id == id);
 }
 
 bool Application::isTapeTarget(const ListExample& example, model::NodeId id) const {

@@ -115,8 +115,10 @@ private:
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
     [[nodiscard]] bool isScissorsTarget(const ListExample& example, model::NodeId id) const;
+    [[nodiscard]] bool isTapeSource(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeTarget(const ListExample& example, model::NodeId id) const;
     void updateHoveredScissorsTarget();
+    void updateHoveredTapeSource();
     void updateHoveredTapeTarget();
     [[nodiscard]] std::optional<NodeReference> findTopmostCard(float x, float y) const;
     [[nodiscard]] bool isNodeHovered(const ListExample& example, model::NodeId id) const;
@@ -142,6 +144,7 @@ private:
     std::optional<DragState> m_DragState;
     std::optional<NodeReference> m_HoveredScissorsTarget;
     std::optional<TapeDragState> m_TapeDrag;
+    std::optional<NodeReference> m_HoveredTapeSource;
     std::optional<NodeReference> m_HoveredTapeTarget;
     HeldTool m_HeldTool = HeldTool::None;
     AdvanceFeedback m_AdvanceFeedback = AdvanceFeedback::None;
