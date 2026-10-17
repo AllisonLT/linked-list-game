@@ -240,6 +240,11 @@ void Application::updateInteraction() {
             std::vector<DraggedNode> downstreamNodes;
             for (const model::NodeId downstreamId :
                  hitNode->example->list.downstreamNodeIds(hitNode->id)) {
+                if (
+                    m_CurrNode && m_CurrNode->example == hitNode->example &&
+                    m_CurrNode->id == downstreamId) {
+                    break;
+                }
                 const view::NodeViewState& downstreamNode = findNodeVisual(
                     hitNode->example->nodes,
                     downstreamId);
