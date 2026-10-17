@@ -49,6 +49,15 @@ constexpr render::Rectangle ADVANCE_TOOL_SLOT{
 };
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
+constexpr float ADVANCE_FEEDBACK_DURATION = 0.5f;
+
+constexpr bool isPointInsideRectangle(
+    const render::Rectangle& rectangle,
+    float x,
+    float y) {
+    return x >= rectangle.x && x <= rectangle.x + rectangle.width &&
+           y >= rectangle.y && y <= rectangle.y + rectangle.height;
+}
 
 constexpr float toNormalizedDeviceX(float canvasX) {
     return (canvasX / Window::TARGET_WIDTH) * 2.0f - 1.0f;
@@ -119,7 +128,14 @@ void Application::processInput() {
     }
 }
 
-void Application::update(float /*deltaTime*/) {
+void Application::update(float deltaTime) {
+    if (m_AdvanceFeedbackRemaining > 0.0f) {
+        m_AdvanceFeedbackRemaining = std::max(0.0f, m_AdvanceFeedbackRemaining - deltaTime);
+        if (m_AdvanceFeedbackRemaining == 0.0f) {
+            m_AdvanceFeedback = AdvanceFeedback::None;
+        }
+    }
+
     const glm::vec2 mouse = Input::getMousePosition();
     std::ostringstream title;
     title << "Linked List Game | Canvas mouse: (" << static_cast<int>(mouse.x) << ", "
@@ -153,6 +169,11 @@ void Application::updateInteraction() {
             : std::nullopt;
     if (clickedTool) {
         m_HeldTool = m_HeldTool == *clickedTool ? HeldTool::None : *clickedTool;
+        m_DragState.reset();
+    } else if (
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        isAdvanceToolAt(mouse.x, mouse.y)) {
+        triggerAdvanceFeedback();
         m_DragState.reset();
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
@@ -276,8 +297,9 @@ void Application::drawToolbox() const {
     constexpr Color toolButtonColor{0.73f, 0.55f, 0.30f};
     constexpr Color toolTextColor{0.95f, 0.91f, 0.82f};
     constexpr Color inactiveTextColor{0.32f, 0.19f, 0.08f};
-
     constexpr Color selectedToolColor{0.96f, 0.72f, 0.24f};
+    constexpr Color errorToolColor{0.68f, 0.15f, 0.13f};
+    constexpr Color errorGlowColor{1.0f, 0.24f, 0.19f};
 
     drawRectangle({TOOLBOX_X, TOOLBOX_Y, TOOLBOX_WIDTH, TOOLBOX_HEIGHT}, toolboxBorderColor);
     drawRectangle(
@@ -303,9 +325,23 @@ void Application::drawToolbox() const {
     drawRectangle(
         SCISSORS_TOOL_SLOT,
         m_HeldTool == HeldTool::Scissors ? selectedToolColor : toolButtonColor);
+    if (m_AdvanceFeedback == AdvanceFeedback::Error) {
+        drawRectangle(
+            {
+                ADVANCE_TOOL_SLOT.x - 6.0f,
+                ADVANCE_TOOL_SLOT.y - 6.0f,
+                ADVANCE_TOOL_SLOT.width + 12.0f,
+                ADVANCE_TOOL_SLOT.height + 12.0f,
+            },
+            errorGlowColor);
+    }
     drawRectangle(
         ADVANCE_TOOL_SLOT,
-        toolButtonColor);
+        m_AdvanceFeedback == AdvanceFeedback::Error
+            ? errorToolColor
+            : (m_AdvanceFeedback == AdvanceFeedback::Activated
+                   ? selectedToolColor
+                   : toolButtonColor));
     m_RobotoMonoPointerTextRenderer->draw(
         "TAPE",
         TOOL_BUTTON_X + 56.0f,
@@ -351,6 +387,14 @@ void Application::drawHeldTool() const {
         heldToolColor.green,
         heldToolColor.blue,
         heldToolColor.alpha);
+}
+
+void Application::triggerAdvanceFeedback() {
+    m_AdvanceFeedback = AdvanceFeedback::Activated;
+    if (m_CurrNode && !m_CurrNode->example->list.node(m_CurrNode->id).next) {
+        m_AdvanceFeedback = AdvanceFeedback::Error;
+    }
+    m_AdvanceFeedbackRemaining = ADVANCE_FEEDBACK_DURATION;
 }
 
 void Application::drawCurrClamp() const {
@@ -768,18 +812,17 @@ void Application::drawRectangle(const render::Rectangle& rectangle, const Color&
 }
 
 std::optional<Application::HeldTool> Application::toolAt(float x, float y) const {
-    const auto contains = [x, y](const render::Rectangle& rectangle) {
-        return x >= rectangle.x && x <= rectangle.x + rectangle.width &&
-               y >= rectangle.y && y <= rectangle.y + rectangle.height;
-    };
-
-    if (contains(TAPE_TOOL_SLOT)) {
+    if (isPointInsideRectangle(TAPE_TOOL_SLOT, x, y)) {
         return HeldTool::Tape;
     }
-    if (contains(SCISSORS_TOOL_SLOT)) {
+    if (isPointInsideRectangle(SCISSORS_TOOL_SLOT, x, y)) {
         return HeldTool::Scissors;
     }
     return std::nullopt;
+}
+
+bool Application::isAdvanceToolAt(float x, float y) const {
+    return isPointInsideRectangle(ADVANCE_TOOL_SLOT, x, y);
 }
 
 void Application::bringToFront(const NodeReference& node) {
