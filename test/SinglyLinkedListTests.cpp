@@ -104,6 +104,21 @@ void testThreeNodeExample() {
     require(list.isConsistent(), "three-node example is consistent");
 }
 
+void testRewireExistingLink() {
+    game::model::SinglyLinkedList<int> list;
+    const auto nodeA = list.emplaceNode(1);
+    const auto nodeB = list.emplaceNode(2);
+    const auto nodeC = list.emplaceNode(3);
+
+    list.setNext(nodeA, nodeB);
+    list.setNext(nodeB, nodeC);
+    list.setNext(nodeA, nodeC);
+
+    require(list.node(nodeA).next == nodeC, "a tape action can replace an existing next link");
+    require(list.node(nodeB).next == nodeC, "rewiring a source preserves unrelated next links");
+    require(list.isConsistent(), "rewiring retains a structurally consistent list");
+}
+
 void testDisconnectedThreeNodeExample() {
     game::model::SinglyLinkedList<std::string> list;
     const auto nodeA = list.emplaceNode("A");
@@ -291,6 +306,7 @@ int main() {
     testRejectsUnknownNodes();
     testSupportsUnicodePayloads();
     testThreeNodeExample();
+    testRewireExistingLink();
     testDisconnectedThreeNodeExample();
     testEnumeratesDownstreamNodes();
     testNodeViewStateIsSeparateFromListData();

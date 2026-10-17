@@ -52,6 +52,7 @@ constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 constexpr float ADVANCE_FEEDBACK_DURATION = 0.5f;
 constexpr float SCISSORS_POINTER_HIT_RADIUS = 20.0f;
+constexpr float TAPE_DRAG_THRESHOLD = 8.0f;
 
 constexpr bool isPointInsideRectangle(
     const render::Rectangle& rectangle,
@@ -159,6 +160,7 @@ void Application::render() {
     }
     drawHeadIndicator(m_CorrectExample);
     drawCurrClamp();
+    drawTapePreview();
     drawHeldTool();
     m_Window->endRender();
 }
@@ -172,17 +174,51 @@ void Application::updateInteraction() {
     if (clickedTool) {
         m_HeldTool = m_HeldTool == *clickedTool ? HeldTool::None : *clickedTool;
         m_DragState.reset();
+        m_TapeDrag.reset();
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         isAdvanceToolAt(mouse.x, mouse.y)) {
         triggerAdvanceFeedback();
         m_DragState.reset();
+        m_TapeDrag.reset();
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::Scissors) {
         if (const std::optional<NodeReference> scissorsTarget =
                 findScissorsTarget(mouse.x, mouse.y)) {
             scissorsTarget->example->list.setNext(scissorsTarget->id, std::nullopt);
+        }
+    } else if (m_HeldTool == HeldTool::Tape) {
+        if (Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+            if (const std::optional<NodeReference> source = findTapeOutput(mouse.x, mouse.y)) {
+                m_TapeDrag = {
+                    .source = *source,
+                    .pressX = mouse.x,
+                    .pressY = mouse.y,
+                };
+            } else if (m_TapeDrag) {
+                if (const std::optional<NodeReference> target = findTopmostCard(mouse.x, mouse.y)) {
+                    m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
+                }
+                m_TapeDrag.reset();
+            } else {
+                m_TapeDrag.reset();
+            }
+        }
+        if (m_TapeDrag && Input::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+            const float offsetX = mouse.x - m_TapeDrag->pressX;
+            const float offsetY = mouse.y - m_TapeDrag->pressY;
+            m_TapeDrag->isDragging = m_TapeDrag->isDragging ||
+                                     (offsetX * offsetX + offsetY * offsetY >=
+                                      TAPE_DRAG_THRESHOLD * TAPE_DRAG_THRESHOLD);
+        }
+        if (
+            m_TapeDrag && m_TapeDrag->isDragging &&
+            Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
+            if (const std::optional<NodeReference> target = findTopmostCard(mouse.x, mouse.y)) {
+                m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
+            }
+            m_TapeDrag.reset();
         }
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
@@ -246,6 +282,7 @@ void Application::updateInteraction() {
     }
 
     updateHoveredScissorsTarget();
+    updateHoveredTapeTarget();
     updateHoveredNode();
 }
 
@@ -267,6 +304,16 @@ void Application::updateHoveredScissorsTarget() {
 
     const glm::vec2 mouse = Input::getMousePosition();
     m_HoveredScissorsTarget = findScissorsTarget(mouse.x, mouse.y);
+}
+
+void Application::updateHoveredTapeTarget() {
+    if (!m_TapeDrag || m_HeldTool != HeldTool::Tape || !Input::isMouseInsideCanvas()) {
+        m_HoveredTapeTarget.reset();
+        return;
+    }
+
+    const glm::vec2 mouse = Input::getMousePosition();
+    m_HoveredTapeTarget = findTopmostCard(mouse.x, mouse.y);
 }
 
 void Application::createRectangleRenderer() {
@@ -409,6 +456,26 @@ void Application::drawHeldTool() const {
         heldToolColor.alpha);
 }
 
+void Application::drawTapePreview() const {
+    if (!m_TapeDrag || !Input::isMouseInsideCanvas()) {
+        return;
+    }
+
+    constexpr Color tapePreviewColor{0.96f, 0.72f, 0.24f};
+    const view::NodeViewState& source = findNodeVisual(
+        m_TapeDrag->source.example->nodes,
+        m_TapeDrag->source.id);
+    const render::NodeLayout layout = layoutFor(source);
+    const glm::vec2 mouse = Input::getMousePosition();
+    drawDirectionalPointer(
+        layout.outputSocket.centerX,
+        layout.outputSocket.centerY,
+        mouse.x,
+        mouse.y,
+        tapePreviewColor,
+        1.0f);
+}
+
 void Application::triggerAdvanceFeedback() {
     m_AdvanceFeedback = AdvanceFeedback::Activated;
     if (m_CurrNode && !m_CurrNode->example->list.node(m_CurrNode->id).next) {
@@ -472,16 +539,23 @@ void Application::drawNodeCard(
     constexpr Color hoverOutline{0.18f, 0.58f, 0.95f};
     constexpr Color selectedOutline{0.08f, 0.37f, 0.88f};
     constexpr Color selectedNodeColor{0.05f, 0.15f, 0.29f};
+    constexpr Color tapeTargetOutline{0.96f, 0.72f, 0.24f};
     constexpr float hoverOutlineWidth = 5.0f;
     constexpr float selectedOutlineWidth = 8.0f;
+    constexpr float tapeTargetOutlineWidth = 8.0f;
     const render::NodeLayout layout = layoutFor(node);
     const bool selected = isNodeSelected(example, node.id);
     const bool hovered = isNodeHovered(example, node.id);
-    const float outlineWidth = selected ? selectedOutlineWidth : (hovered ? hoverOutlineWidth : 0.0f);
+    const bool tapeTarget = isTapeTarget(example, node.id);
+    const float outlineWidth = tapeTarget
+                                   ? tapeTargetOutlineWidth
+                                   : (selected ? selectedOutlineWidth
+                                               : (hovered ? hoverOutlineWidth : 0.0f));
     const Color& cardColor = selected ? selectedNodeColor : nodeColor;
 
     if (outlineWidth > 0.0f) {
-        const Color& outlineColor = selected ? selectedOutline : hoverOutline;
+        const Color& outlineColor =
+            tapeTarget ? tapeTargetOutline : (selected ? selectedOutline : hoverOutline);
         drawNodeSilhouette(layout, outlineWidth, outlineColor);
     }
 
@@ -898,9 +972,24 @@ std::optional<Application::NodeReference> Application::findScissorsTarget(float 
     return std::nullopt;
 }
 
+std::optional<Application::NodeReference> Application::findTapeOutput(float x, float y) const {
+    for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        const view::NodeViewState& node = findNodeVisual(iterator->example->nodes, iterator->id);
+        if (render::isPointInsideNextOutput(node, x, y)) {
+            return *iterator;
+        }
+    }
+    return std::nullopt;
+}
+
 bool Application::isScissorsTarget(const ListExample& example, model::NodeId id) const {
     return m_HoveredScissorsTarget && m_HoveredScissorsTarget->example == &example &&
            m_HoveredScissorsTarget->id == id;
+}
+
+bool Application::isTapeTarget(const ListExample& example, model::NodeId id) const {
+    return m_HoveredTapeTarget && m_HoveredTapeTarget->example == &example &&
+           m_HoveredTapeTarget->id == id;
 }
 
 void Application::bringToFront(const NodeReference& node) {

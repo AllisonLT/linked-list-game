@@ -66,6 +66,13 @@ private:
         std::vector<DraggedNode> downstreamNodes;
     };
 
+    struct TapeDragState {
+        NodeReference source;
+        float pressX;
+        float pressY;
+        bool isDragging = false;
+    };
+
     void processInput();
     void update(float deltaTime);
     void render();
@@ -76,6 +83,7 @@ private:
     void drawToolbox() const;
     void drawCurrClamp() const;
     void drawHeldTool() const;
+    void drawTapePreview() const;
     void triggerAdvanceFeedback();
     void drawNodeCard(const ListExample& example, const view::NodeViewState& node) const;
     void drawNodeText(const ListExample& example, const view::NodeViewState& node) const;
@@ -105,8 +113,11 @@ private:
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
+    [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
     [[nodiscard]] bool isScissorsTarget(const ListExample& example, model::NodeId id) const;
+    [[nodiscard]] bool isTapeTarget(const ListExample& example, model::NodeId id) const;
     void updateHoveredScissorsTarget();
+    void updateHoveredTapeTarget();
     [[nodiscard]] std::optional<NodeReference> findTopmostCard(float x, float y) const;
     [[nodiscard]] bool isNodeHovered(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isNodeSelected(const ListExample& example, model::NodeId id) const;
@@ -130,6 +141,8 @@ private:
     std::optional<NodeReference> m_CurrNode;
     std::optional<DragState> m_DragState;
     std::optional<NodeReference> m_HoveredScissorsTarget;
+    std::optional<TapeDragState> m_TapeDrag;
+    std::optional<NodeReference> m_HoveredTapeTarget;
     HeldTool m_HeldTool = HeldTool::None;
     AdvanceFeedback m_AdvanceFeedback = AdvanceFeedback::None;
     float m_AdvanceFeedbackRemaining = 0.0f;
