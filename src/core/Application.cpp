@@ -1,5 +1,6 @@
 #include "core/Application.hpp"
 #include "core/Input.hpp"
+#include "render/PointerHitTest.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -50,6 +51,7 @@ constexpr render::Rectangle ADVANCE_TOOL_SLOT{
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 constexpr float ADVANCE_FEEDBACK_DURATION = 0.5f;
+constexpr float SCISSORS_POINTER_HIT_RADIUS = 20.0f;
 
 constexpr bool isPointInsideRectangle(
     const render::Rectangle& rectangle,
@@ -177,6 +179,13 @@ void Application::updateInteraction() {
         m_DragState.reset();
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        m_HeldTool == HeldTool::Scissors) {
+        if (const std::optional<NodeReference> scissorsTarget =
+                findScissorsTarget(mouse.x, mouse.y)) {
+            scissorsTarget->example->list.setNext(scissorsTarget->id, std::nullopt);
+        }
+    } else if (
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::None) {
         const std::optional<NodeReference> hitNode = findTopmostCard(mouse.x, mouse.y);
         if (hitNode) {
@@ -236,6 +245,7 @@ void Application::updateInteraction() {
         }
     }
 
+    updateHoveredScissorsTarget();
     updateHoveredNode();
 }
 
@@ -247,6 +257,16 @@ void Application::updateHoveredNode() {
 
     const glm::vec2 mouse = Input::getMousePosition();
     m_HoveredNode = findTopmostCard(mouse.x, mouse.y);
+}
+
+void Application::updateHoveredScissorsTarget() {
+    if (m_HeldTool != HeldTool::Scissors || !Input::isMouseInsideCanvas()) {
+        m_HoveredScissorsTarget.reset();
+        return;
+    }
+
+    const glm::vec2 mouse = Input::getMousePosition();
+    m_HoveredScissorsTarget = findScissorsTarget(mouse.x, mouse.y);
 }
 
 void Application::createRectangleRenderer() {
@@ -401,6 +421,7 @@ void Application::drawCurrClamp() const {
     constexpr Color clampBodyColor{0.88f, 0.64f, 0.20f};
     constexpr Color clampInsetColor{0.27f, 0.18f, 0.08f};
     constexpr Color clampLabelColor{0.98f, 0.94f, 0.82f};
+    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
     std::optional<render::NodeLayout> attachedLayout;
     float clampCenterX = Window::TARGET_WIDTH / 2.0f;
     float clampY = 420.0f;
@@ -438,7 +459,9 @@ void Application::drawCurrClamp() const {
             clampCenterX,
             clampY + clampHeight + 34.0f,
             clampCenterX,
-            attachedLayout->referenceDock.centerY + attachedLayout->referenceDock.radius);
+            attachedLayout->referenceDock.centerY + attachedLayout->referenceDock.radius,
+            pointerColor,
+            1.0f);
     }
 }
 
@@ -503,6 +526,10 @@ void Application::drawExampleConnections(const ListExample& example) const {
 }
 
 void Application::drawListPointers(const ListExample& example) const {
+    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
+    constexpr Color scissorsGlowColor{1.0f, 0.59f, 0.24f};
+    constexpr Color scissorsPointerColor{1.0f, 0.83f, 0.41f};
+
     for (const view::NodeViewState& source : example.nodes) {
         const std::optional<model::NodeId> destinationId = example.list.node(source.id).next;
         if (!destinationId) {
@@ -512,16 +539,28 @@ void Application::drawListPointers(const ListExample& example) const {
         const render::NodeLayout sourceLayout = layoutFor(source);
         const view::NodeViewState& destination = findNodeVisual(example.nodes, *destinationId);
         const render::NodeLayout destinationLayout = layoutFor(destination);
+        if (isScissorsTarget(example, source.id)) {
+            drawDirectionalPointer(
+                sourceLayout.outputSocket.centerX,
+                sourceLayout.outputSocket.centerY,
+                destinationLayout.card.x,
+                destinationLayout.card.y + destinationLayout.card.height / 2.0f,
+                scissorsGlowColor,
+                1.7f);
+        }
         drawDirectionalPointer(
             sourceLayout.outputSocket.centerX,
             sourceLayout.outputSocket.centerY,
             destinationLayout.card.x,
-            destinationLayout.card.y + destinationLayout.card.height / 2.0f);
+            destinationLayout.card.y + destinationLayout.card.height / 2.0f,
+            isScissorsTarget(example, source.id) ? scissorsPointerColor : pointerColor,
+            1.0f);
     }
 }
 
 void Application::drawHeadIndicator(const ListExample& example) const {
     constexpr Color labelColor{0.07f, 0.10f, 0.15f};
+    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
     constexpr std::string_view headLabel = "head";
 
     const std::optional<model::NodeId> headId = example.list.head();
@@ -536,7 +575,9 @@ void Application::drawHeadIndicator(const ListExample& example) const {
         centerX,
         layout.card.y - 80.0f,
         centerX,
-        layout.referenceDock.centerY + layout.referenceDock.radius);
+        layout.referenceDock.centerY + layout.referenceDock.radius,
+        pointerColor,
+        1.0f);
     m_RobotoRegularTextRenderer->draw(
         headLabel,
         centerX - m_RobotoRegularTextRenderer->measureWidth(headLabel) / 2.0f,
@@ -559,11 +600,15 @@ void Application::drawDirectionalPointer(
     float sourceX,
     float sourceY,
     float destinationX,
-    float destinationY) const {
-    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
-    constexpr float lineHalfWidth = 5.0f;
-    constexpr float arrowLength = 28.0f;
-    constexpr float arrowHalfWidth = 16.0f;
+    float destinationY,
+    const Color& color,
+    float sizeScale) const {
+    constexpr float baseLineHalfWidth = 5.0f;
+    constexpr float baseArrowLength = 28.0f;
+    constexpr float baseArrowHalfWidth = 16.0f;
+    const float lineHalfWidth = baseLineHalfWidth * sizeScale;
+    const float arrowLength = baseArrowLength * sizeScale;
+    const float arrowHalfWidth = baseArrowHalfWidth * sizeScale;
 
     const float deltaX = destinationX - sourceX;
     const float deltaY = destinationY - sourceY;
@@ -602,10 +647,10 @@ void Application::drawDirectionalPointer(
 
     m_ColorShader->use();
     m_ColorShader->setColor(
-        pointerColor.red,
-        pointerColor.green,
-        pointerColor.blue,
-        pointerColor.alpha);
+        color.red,
+        color.green,
+        color.blue,
+        color.alpha);
     glBindVertexArray(m_RectangleVertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, m_RectangleVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
@@ -823,6 +868,39 @@ std::optional<Application::HeldTool> Application::toolAt(float x, float y) const
 
 bool Application::isAdvanceToolAt(float x, float y) const {
     return isPointInsideRectangle(ADVANCE_TOOL_SLOT, x, y);
+}
+
+std::optional<Application::NodeReference> Application::findScissorsTarget(float x, float y) const {
+    for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        const view::NodeViewState& source = findNodeVisual(iterator->example->nodes, iterator->id);
+        const std::optional<model::NodeId> destinationId =
+            iterator->example->list.node(iterator->id).next;
+        if (!destinationId) {
+            continue;
+        }
+
+        const view::NodeViewState& destination = findNodeVisual(
+            iterator->example->nodes,
+            *destinationId);
+        const render::NodeLayout sourceLayout = layoutFor(source);
+        const render::NodeLayout destinationLayout = layoutFor(destination);
+        if (render::isPointInsidePointerHitArea(
+                sourceLayout.outputSocket.centerX,
+                sourceLayout.outputSocket.centerY,
+                destinationLayout.card.x,
+                destinationLayout.card.y + destinationLayout.card.height / 2.0f,
+                x,
+                y,
+                SCISSORS_POINTER_HIT_RADIUS)) {
+            return *iterator;
+        }
+    }
+    return std::nullopt;
+}
+
+bool Application::isScissorsTarget(const ListExample& example, model::NodeId id) const {
+    return m_HoveredScissorsTarget && m_HoveredScissorsTarget->example == &example &&
+           m_HoveredScissorsTarget->id == id;
 }
 
 void Application::bringToFront(const NodeReference& node) {

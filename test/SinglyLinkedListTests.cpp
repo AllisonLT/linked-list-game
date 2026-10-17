@@ -1,4 +1,5 @@
 #include "render/CardHitTest.hpp"
+#include "render/PointerHitTest.hpp"
 #include "model/SinglyLinkedList.hpp"
 #include "render/NodeLayout.hpp"
 #include "view/NodeViewState.hpp"
@@ -205,6 +206,39 @@ void testCardHitTesting() {
         "next input excludes the external-reference dock");
 }
 
+void testPointerHitTesting() {
+    require(
+        game::render::isPointInsidePointerHitArea(
+            100.0f,
+            200.0f,
+            300.0f,
+            200.0f,
+            200.0f,
+            215.0f,
+            20.0f),
+        "pointer hit area includes points near its shaft");
+    require(
+        !game::render::isPointInsidePointerHitArea(
+            100.0f,
+            200.0f,
+            300.0f,
+            200.0f,
+            200.0f,
+            221.0f,
+            20.0f),
+        "pointer hit area excludes points beyond its radius");
+    require(
+        game::render::isPointInsidePointerHitArea(
+            100.0f,
+            200.0f,
+            100.0f,
+            200.0f,
+            112.0f,
+            205.0f,
+            20.0f),
+        "zero-length pointers use a circular hit area");
+}
+
 void testDefinesNodeLayout() {
     const auto layout = game::render::makeNodeLayout(100.0f, 200.0f);
 
@@ -261,6 +295,7 @@ int main() {
     testEnumeratesDownstreamNodes();
     testNodeViewStateIsSeparateFromListData();
     testCardHitTesting();
+    testPointerHitTesting();
     testDefinesNodeLayout();
     testClampsCardCenterToCanvas();
 }

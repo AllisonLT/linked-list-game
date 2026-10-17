@@ -83,7 +83,13 @@ private:
     void drawListPointers(const ListExample& example) const;
     void drawHeadIndicator(const ListExample& example) const;
     void drawNullEndpoints(const ListExample& example) const;
-    void drawDirectionalPointer(float sourceX, float sourceY, float destinationX, float destinationY) const;
+    void drawDirectionalPointer(
+        float sourceX,
+        float sourceY,
+        float destinationX,
+        float destinationY,
+        const Color& color,
+        float sizeScale) const;
     void drawNullEndpoint(const view::NodeViewState& node) const;
     void drawCircle(float centerX, float centerY, float radius, const Color& color) const;
     void drawNodeSilhouette(
@@ -98,6 +104,9 @@ private:
     void bringToFront(const NodeReference& node);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
+    [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
+    [[nodiscard]] bool isScissorsTarget(const ListExample& example, model::NodeId id) const;
+    void updateHoveredScissorsTarget();
     [[nodiscard]] std::optional<NodeReference> findTopmostCard(float x, float y) const;
     [[nodiscard]] bool isNodeHovered(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isNodeSelected(const ListExample& example, model::NodeId id) const;
@@ -120,6 +129,7 @@ private:
     std::optional<NodeReference> m_SelectedNode;
     std::optional<NodeReference> m_CurrNode;
     std::optional<DragState> m_DragState;
+    std::optional<NodeReference> m_HoveredScissorsTarget;
     HeldTool m_HeldTool = HeldTool::None;
     AdvanceFeedback m_AdvanceFeedback = AdvanceFeedback::None;
     float m_AdvanceFeedbackRemaining = 0.0f;
