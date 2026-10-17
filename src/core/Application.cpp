@@ -15,8 +15,11 @@ namespace {
 constexpr float SOURCE_NODE_X = 500.0f;
 constexpr float MIDDLE_NODE_X = 830.0f;
 constexpr float DESTINATION_NODE_X = 1160.0f;
-constexpr float CORRECT_NODE_Y = 300.0f;
-constexpr float INCORRECT_NODE_Y = 700.0f;
+constexpr float CORRECT_NODE_Y = 760.0f;
+constexpr float WORKBENCH_X = 60.0f;
+constexpr float WORKBENCH_Y = 50.0f;
+constexpr float WORKBENCH_WIDTH = Window::TARGET_WIDTH - (2.0f * WORKBENCH_X);
+constexpr float WORKBENCH_HEIGHT = (Window::TARGET_HEIGHT * 3.0f) / 5.0f;
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 
@@ -56,30 +59,12 @@ Application::Application() {
         {.id = correctB, .x = MIDDLE_NODE_X, .y = CORRECT_NODE_Y},
         {.id = correctC, .x = DESTINATION_NODE_X, .y = CORRECT_NODE_Y},
     };
-    m_CorrectExample.description = "Correct: A -> B -> C -> nullptr";
-    m_CorrectExample.descriptionBaselineY = 120.0f;
 
-    const model::NodeId incorrectA = m_IncorrectExample.list.emplaceNode("A");
-    const model::NodeId incorrectB = m_IncorrectExample.list.emplaceNode("B");
-    const model::NodeId incorrectC = m_IncorrectExample.list.emplaceNode("C");
-    m_IncorrectExample.list.setHead(incorrectA);
-    m_IncorrectExample.list.setNext(incorrectA, incorrectB);
-    m_IncorrectExample.nodes = {
-        {.id = incorrectA, .x = SOURCE_NODE_X, .y = INCORRECT_NODE_Y},
-        {.id = incorrectB, .x = MIDDLE_NODE_X, .y = INCORRECT_NODE_Y},
-        {.id = incorrectC, .x = DESTINATION_NODE_X, .y = INCORRECT_NODE_Y},
-    };
-    m_IncorrectExample.description = "Incorrect: B ends early; C is disconnected";
-    m_IncorrectExample.descriptionBaselineY = 520.0f;
-
-    if (!m_CorrectExample.list.isConsistent() || !m_IncorrectExample.list.isConsistent()) {
+    if (!m_CorrectExample.list.isConsistent()) {
         throw std::logic_error("A fixed linked-list example is inconsistent");
     }
     for (const view::NodeViewState& node : m_CorrectExample.nodes) {
         m_DrawOrder.push_back({.example = &m_CorrectExample, .id = node.id});
-    }
-    for (const view::NodeViewState& node : m_IncorrectExample.nodes) {
-        m_DrawOrder.push_back({.example = &m_IncorrectExample, .id = node.id});
     }
     createRectangleRenderer();
 }
@@ -120,15 +105,15 @@ void Application::update(float /*deltaTime*/) {
 
 void Application::render() {
     m_Window->beginRender();
+    drawWorkbench();
     drawExampleConnections(m_CorrectExample);
-    drawExampleConnections(m_IncorrectExample);
     for (const NodeReference& reference : m_DrawOrder) {
         const view::NodeViewState& node = findNodeVisual(reference.example->nodes, reference.id);
         drawNodeCard(*reference.example, node);
         drawNodeText(*reference.example, node);
     }
     drawHeadIndicator(m_CorrectExample);
-    drawHeadIndicator(m_IncorrectExample);
+    drawCurrClamp();
     m_Window->endRender();
 }
 
@@ -195,6 +180,142 @@ void Application::createRectangleRenderer() {
     glBindVertexArray(0);
 }
 
+void Application::drawWorkbench() const {
+    constexpr Color tableBorderColor{0.26f, 0.15f, 0.08f};
+    constexpr Color tableSurfaceColor{0.68f, 0.48f, 0.28f};
+    constexpr Color titleColor{0.17f, 0.10f, 0.05f};
+    constexpr float tableBorderWidth = 14.0f;
+
+    drawRectangle(
+        {WORKBENCH_X, WORKBENCH_Y, WORKBENCH_WIDTH, WORKBENCH_HEIGHT},
+        tableBorderColor);
+    drawRectangle(
+        {
+            WORKBENCH_X + tableBorderWidth,
+            WORKBENCH_Y + tableBorderWidth,
+            WORKBENCH_WIDTH - (2.0f * tableBorderWidth),
+            WORKBENCH_HEIGHT - (2.0f * tableBorderWidth),
+        },
+        tableSurfaceColor);
+    m_RobotoRegularTextRenderer->draw(
+        "Pointer Workbench",
+        WORKBENCH_X + 750.0f,
+        WORKBENCH_Y + 62.0f,
+        titleColor.red,
+        titleColor.green,
+        titleColor.blue,
+        titleColor.alpha);
+    drawToolbox();
+}
+
+void Application::drawToolbox() const {
+    constexpr Color toolboxBorderColor{0.20f, 0.12f, 0.07f};
+    constexpr Color toolboxSurfaceColor{0.40f, 0.24f, 0.12f};
+    constexpr Color toolButtonColor{0.73f, 0.55f, 0.30f};
+    constexpr Color toolTextColor{0.95f, 0.91f, 0.82f};
+    constexpr Color inactiveTextColor{0.32f, 0.19f, 0.08f};
+
+    constexpr float toolboxX = WORKBENCH_X + 50.0f;
+    constexpr float toolboxY = WORKBENCH_Y + 120.0f;
+    constexpr float toolboxWidth = 255.0f;
+    constexpr float toolboxHeight = 405.0f;
+    constexpr float buttonX = toolboxX + 34.0f;
+    constexpr float buttonY = toolboxY + 79.0f;
+    constexpr float buttonWidth = 187.0f;
+    constexpr float buttonHeight = 66.0f;
+    constexpr float buttonGap = 17.0f;
+
+    drawRectangle({toolboxX, toolboxY, toolboxWidth, toolboxHeight}, toolboxBorderColor);
+    drawRectangle(
+        {toolboxX + 10.0f, toolboxY + 10.0f, toolboxWidth - 20.0f, toolboxHeight - 20.0f},
+        toolboxSurfaceColor);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "TOOLBOX",
+        toolboxX + 36.0f,
+        toolboxY + 40.0f,
+        toolTextColor.red,
+        toolTextColor.green,
+        toolTextColor.blue,
+        toolTextColor.alpha);
+
+    drawRectangle({buttonX, buttonY, buttonWidth, buttonHeight}, toolButtonColor);
+    drawRectangle(
+        {buttonX, buttonY + buttonHeight + buttonGap, buttonWidth, buttonHeight},
+        toolButtonColor);
+    drawRectangle(
+        {buttonX, buttonY + (2.0f * (buttonHeight + buttonGap)), buttonWidth, buttonHeight},
+        toolButtonColor);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "TAPE",
+        buttonX + 56.0f,
+        buttonY + 44.0f,
+        inactiveTextColor.red,
+        inactiveTextColor.green,
+        inactiveTextColor.blue,
+        inactiveTextColor.alpha);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "SCISSORS",
+        buttonX + 20.0f,
+        buttonY + buttonHeight + buttonGap + 44.0f,
+        inactiveTextColor.red,
+        inactiveTextColor.green,
+        inactiveTextColor.blue,
+        inactiveTextColor.alpha);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "ADVANCE",
+        buttonX + 25.0f,
+        buttonY + (2.0f * (buttonHeight + buttonGap)) + 44.0f,
+        inactiveTextColor.red,
+        inactiveTextColor.green,
+        inactiveTextColor.blue,
+        inactiveTextColor.alpha);
+}
+
+void Application::drawCurrClamp() const {
+    constexpr Color clampBodyColor{0.88f, 0.64f, 0.20f};
+    constexpr Color clampInsetColor{0.27f, 0.18f, 0.08f};
+    constexpr Color clampLabelColor{0.98f, 0.94f, 0.82f};
+    std::optional<render::NodeLayout> attachedLayout;
+    float clampCenterX = Window::TARGET_WIDTH / 2.0f;
+    float clampY = 420.0f;
+
+    if (m_CurrNode) {
+        const view::NodeViewState& node = findNodeVisual(
+            m_CurrNode->example->nodes,
+            m_CurrNode->id);
+        attachedLayout = layoutFor(node);
+        clampCenterX = attachedLayout->referenceDock.centerX;
+        clampY = attachedLayout->card.y - 150.0f;
+    }
+
+    const float clampX = clampCenterX - 78.0f;
+    constexpr float clampWidth = 156.0f;
+    constexpr float clampHeight = 56.0f;
+
+    drawRectangle({clampX, clampY, clampWidth, clampHeight}, clampBodyColor);
+    drawRectangle(
+        {clampX + 10.0f, clampY + 10.0f, clampWidth - 20.0f, clampHeight - 20.0f},
+        clampInsetColor);
+    drawRectangle(
+        {clampCenterX - 9.0f, clampY + clampHeight, 18.0f, 34.0f},
+        clampBodyColor);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "curr",
+        clampCenterX - m_RobotoMonoPointerTextRenderer->measureWidth("curr") / 2.0f,
+        clampY + 36.0f,
+        clampLabelColor.red,
+        clampLabelColor.green,
+        clampLabelColor.blue,
+        clampLabelColor.alpha);
+    if (attachedLayout) {
+        drawDirectionalPointer(
+            clampCenterX,
+            clampY + clampHeight + 34.0f,
+            clampCenterX,
+            attachedLayout->referenceDock.centerY + attachedLayout->referenceDock.radius);
+    }
+}
+
 void Application::drawNodeCard(
     const ListExample& example,
     const view::NodeViewState& node) const {
@@ -251,18 +372,8 @@ void Application::drawNodeText(
 }
 
 void Application::drawExampleConnections(const ListExample& example) const {
-    constexpr Color labelColor{0.07f, 0.10f, 0.15f};
-
     drawListPointers(example);
     drawNullEndpoints(example);
-    m_RobotoRegularTextRenderer->draw(
-        example.description,
-        80.0f,
-        example.descriptionBaselineY,
-        labelColor.red,
-        labelColor.green,
-        labelColor.blue,
-        labelColor.alpha);
 }
 
 void Application::drawListPointers(const ListExample& example) const {

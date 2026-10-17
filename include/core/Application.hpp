@@ -32,8 +32,6 @@ private:
     struct ListExample {
         model::SinglyLinkedList<std::string> list;
         std::vector<view::NodeViewState> nodes;
-        std::string description;
-        float descriptionBaselineY = 0.0f;
     };
 
     struct NodeReference {
@@ -53,6 +51,9 @@ private:
     void updateInteraction();
     void updateHoveredNode();
     void createRectangleRenderer();
+    void drawWorkbench() const;
+    void drawToolbox() const;
+    void drawCurrClamp() const;
     void drawNodeCard(const ListExample& example, const view::NodeViewState& node) const;
     void drawNodeText(const ListExample& example, const view::NodeViewState& node) const;
     void drawExampleConnections(const ListExample& example) const;
@@ -89,10 +90,10 @@ private:
     std::unique_ptr<TextRenderer> m_RobotoMonoPointerTextRenderer;
     std::unique_ptr<TextRenderer> m_RobotoRegularTextRenderer;
     ListExample m_CorrectExample;
-    ListExample m_IncorrectExample;
     std::vector<NodeReference> m_DrawOrder;
     std::optional<NodeReference> m_HoveredNode;
     std::optional<NodeReference> m_SelectedNode;
+    std::optional<NodeReference> m_CurrNode;
     std::optional<DragState> m_DragState;
     unsigned int m_RectangleVertexArray = 0;
     unsigned int m_RectangleVertexBuffer = 0;
