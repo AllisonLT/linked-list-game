@@ -125,10 +125,26 @@ void Application::updateInteraction() {
             bringToFront(*hitNode);
             m_SelectedNode = *hitNode;
             view::NodeViewState& node = findNodeVisual(hitNode->example->nodes, hitNode->id);
+            std::vector<DraggedNode> downstreamNodes;
+            for (const model::NodeId downstreamId :
+                 hitNode->example->list.downstreamNodeIds(hitNode->id)) {
+                const view::NodeViewState& downstreamNode = findNodeVisual(
+                    hitNode->example->nodes,
+                    downstreamId);
+                downstreamNodes.push_back(
+                    {
+                        .id = downstreamId,
+                        .initialX = downstreamNode.x,
+                        .initialY = downstreamNode.y,
+                    });
+            }
             m_DragState = {
                 .node = *hitNode,
                 .offsetX = mouse.x - node.x,
                 .offsetY = mouse.y - node.y,
+                .initialX = node.x,
+                .initialY = node.y,
+                .downstreamNodes = std::move(downstreamNodes),
             };
         } else {
             m_SelectedNode.reset();
@@ -150,6 +166,15 @@ void Application::updateInteraction() {
                 Window::TARGET_HEIGHT);
             node.x = clampedCard.x;
             node.y = clampedCard.y;
+            const float deltaX = node.x - m_DragState->initialX;
+            const float deltaY = node.y - m_DragState->initialY;
+            for (const DraggedNode& downstreamNode : m_DragState->downstreamNodes) {
+                view::NodeViewState& visual = findNodeVisual(
+                    m_DragState->node.example->nodes,
+                    downstreamNode.id);
+                visual.x = downstreamNode.initialX + deltaX;
+                visual.y = downstreamNode.initialY + deltaY;
+            }
         }
     }
 

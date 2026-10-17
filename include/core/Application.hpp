@@ -39,10 +39,19 @@ private:
         model::NodeId id;
     };
 
+    struct DraggedNode {
+        model::NodeId id;
+        float initialX;
+        float initialY;
+    };
+
     struct DragState {
         NodeReference node;
         float offsetX;
         float offsetY;
+        float initialX;
+        float initialY;
+        std::vector<DraggedNode> downstreamNodes;
     };
 
     void processInput();

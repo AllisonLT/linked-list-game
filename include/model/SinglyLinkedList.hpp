@@ -6,7 +6,9 @@
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace game::model {
 
@@ -81,6 +83,20 @@ public:
     void clear() noexcept {
         m_Nodes.clear();
         m_Head.reset();
+    }
+
+    [[nodiscard]] std::vector<NodeId> downstreamNodeIds(NodeId source) const {
+        std::vector<NodeId> downstream;
+        std::unordered_set<NodeId, NodeIdHash> visited;
+        visited.insert(source);
+
+        const Node* current = &findNode(source);
+        while (current->next && visited.insert(*current->next).second) {
+            downstream.push_back(*current->next);
+            current = &findNode(*current->next);
+        }
+
+        return downstream;
     }
 
     [[nodiscard]] bool isConsistent() const noexcept {

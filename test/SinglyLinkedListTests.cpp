@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -115,6 +116,28 @@ void testDisconnectedThreeNodeExample() {
     require(!list.node(nodeB).next, "node B incorrectly has a null endpoint");
     require(!list.node(nodeC).next, "disconnected node C has a null endpoint");
     require(list.isConsistent(), "disconnected nodes are structurally consistent");
+}
+
+void testEnumeratesDownstreamNodes() {
+    game::model::SinglyLinkedList<int> list;
+    const auto nodeA = list.emplaceNode(1);
+    const auto nodeB = list.emplaceNode(2);
+    const auto nodeC = list.emplaceNode(3);
+
+    list.setNext(nodeA, nodeB);
+    list.setNext(nodeB, nodeC);
+
+    require(
+        list.downstreamNodeIds(nodeA) == std::vector{nodeB, nodeC},
+        "an upstream node enumerates all downstream nodes in order");
+    require(
+        list.downstreamNodeIds(nodeB) == std::vector{nodeC},
+        "dragging a middle node leaves upstream nodes unaffected");
+
+    list.setNext(nodeC, nodeA);
+    require(
+        list.downstreamNodeIds(nodeA) == std::vector{nodeB, nodeC},
+        "downstream traversal stops before repeating a cyclic source node");
 }
 
 void testNodeViewStateIsSeparateFromListData() {
@@ -235,6 +258,7 @@ int main() {
     testSupportsUnicodePayloads();
     testThreeNodeExample();
     testDisconnectedThreeNodeExample();
+    testEnumeratesDownstreamNodes();
     testNodeViewStateIsSeparateFromListData();
     testCardHitTesting();
     testDefinesNodeLayout();
