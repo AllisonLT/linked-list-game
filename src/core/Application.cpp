@@ -319,8 +319,9 @@ void Application::drawToolbox() const {
         toolTextColor.blue,
         toolTextColor.alpha);
 
+    drawRectangle(TAPE_TOOL_SLOT, toolButtonColor);
+    drawRectangle(SCISSORS_TOOL_SLOT, toolButtonColor);
     if (m_HeldTool != HeldTool::Tape) {
-        drawRectangle(TAPE_TOOL_SLOT, toolButtonColor);
         m_RobotoMonoPointerTextRenderer->draw(
             "TAPE",
             TOOL_BUTTON_X + 56.0f,
@@ -331,7 +332,6 @@ void Application::drawToolbox() const {
             inactiveTextColor.alpha);
     }
     if (m_HeldTool != HeldTool::Scissors) {
-        drawRectangle(SCISSORS_TOOL_SLOT, toolButtonColor);
         m_RobotoMonoPointerTextRenderer->draw(
             "SCISSORS",
             TOOL_BUTTON_X + 20.0f,
