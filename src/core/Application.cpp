@@ -554,26 +554,30 @@ void Application::drawNodeCard(
     constexpr Color tapeTargetOutline{0.96f, 0.72f, 0.24f};
     constexpr float hoverOutlineWidth = 5.0f;
     constexpr float selectedOutlineWidth = 8.0f;
-    constexpr float tapeSourceOutlineWidth = 6.0f;
+    constexpr float tapeSourceOutlineWidth = 7.0f;
     constexpr float tapeTargetOutlineWidth = 8.0f;
     const render::NodeLayout layout = layoutFor(node);
     const bool selected = isNodeSelected(example, node.id);
-    const bool hovered = isNodeHovered(example, node.id);
     const bool tapeSource = isTapeSource(example, node.id);
+    const bool hovered = isNodeHovered(example, node.id) && !tapeSource;
     const bool tapeTarget = isTapeTarget(example, node.id);
     const float outlineWidth = tapeTarget
                                    ? tapeTargetOutlineWidth
-                                   : (tapeSource
-                                          ? tapeSourceOutlineWidth
-                                          : (selected ? selectedOutlineWidth
-                                                      : (hovered ? hoverOutlineWidth : 0.0f)));
+                                   : (selected ? selectedOutlineWidth
+                                               : (hovered ? hoverOutlineWidth : 0.0f));
     const Color& cardColor = selected ? selectedNodeColor : nodeColor;
+
+    if (tapeSource) {
+        drawCircle(
+            layout.outputSocket.centerX,
+            layout.outputSocket.centerY,
+            layout.outputSocket.radius + tapeSourceOutlineWidth,
+            tapeSourceOutline);
+    }
 
     if (outlineWidth > 0.0f) {
         const Color& outlineColor =
-            tapeTarget
-                ? tapeTargetOutline
-                : (tapeSource ? tapeSourceOutline : (selected ? selectedOutline : hoverOutline));
+            tapeTarget ? tapeTargetOutline : (selected ? selectedOutline : hoverOutline);
         drawNodeSilhouette(layout, outlineWidth, outlineColor);
     }
 
