@@ -20,6 +20,33 @@ constexpr float WORKBENCH_X = 60.0f;
 constexpr float WORKBENCH_Y = 50.0f;
 constexpr float WORKBENCH_WIDTH = Window::TARGET_WIDTH - (2.0f * WORKBENCH_X);
 constexpr float WORKBENCH_HEIGHT = (Window::TARGET_HEIGHT * 3.0f) / 5.0f;
+constexpr float TOOLBOX_X = WORKBENCH_X + 50.0f;
+constexpr float TOOLBOX_Y = WORKBENCH_Y + 120.0f;
+constexpr float TOOLBOX_WIDTH = 255.0f;
+constexpr float TOOLBOX_HEIGHT = 405.0f;
+constexpr float TOOL_BUTTON_X = TOOLBOX_X + 34.0f;
+constexpr float TOOL_BUTTON_Y = TOOLBOX_Y + 79.0f;
+constexpr float TOOL_BUTTON_WIDTH = 187.0f;
+constexpr float TOOL_BUTTON_HEIGHT = 66.0f;
+constexpr float TOOL_BUTTON_GAP = 17.0f;
+constexpr render::Rectangle TAPE_TOOL_SLOT{
+    TOOL_BUTTON_X,
+    TOOL_BUTTON_Y,
+    TOOL_BUTTON_WIDTH,
+    TOOL_BUTTON_HEIGHT,
+};
+constexpr render::Rectangle SCISSORS_TOOL_SLOT{
+    TOOL_BUTTON_X,
+    TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP,
+    TOOL_BUTTON_WIDTH,
+    TOOL_BUTTON_HEIGHT,
+};
+constexpr render::Rectangle ADVANCE_TOOL_SLOT{
+    TOOL_BUTTON_X,
+    TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
+    TOOL_BUTTON_WIDTH,
+    TOOL_BUTTON_HEIGHT,
+};
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
 
@@ -114,12 +141,22 @@ void Application::render() {
     }
     drawHeadIndicator(m_CorrectExample);
     drawCurrClamp();
+    drawHeldTool();
     m_Window->endRender();
 }
 
 void Application::updateInteraction() {
     const glm::vec2 mouse = Input::getMousePosition();
-    if (Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)) {
+    const std::optional<HeldTool> clickedTool =
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)
+            ? toolAt(mouse.x, mouse.y)
+            : std::nullopt;
+    if (clickedTool) {
+        m_HeldTool = m_HeldTool == *clickedTool ? HeldTool::None : *clickedTool;
+        m_DragState.reset();
+    } else if (
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        m_HeldTool == HeldTool::None) {
         const std::optional<NodeReference> hitNode = findTopmostCard(mouse.x, mouse.y);
         if (hitNode) {
             bringToFront(*hitNode);
@@ -152,7 +189,7 @@ void Application::updateInteraction() {
         }
     }
 
-    if (m_DragState) {
+    if (m_DragState && m_HeldTool == HeldTool::None) {
         if (Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
             m_DragState.reset();
         } else if (Input::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
@@ -240,60 +277,80 @@ void Application::drawToolbox() const {
     constexpr Color toolTextColor{0.95f, 0.91f, 0.82f};
     constexpr Color inactiveTextColor{0.32f, 0.19f, 0.08f};
 
-    constexpr float toolboxX = WORKBENCH_X + 50.0f;
-    constexpr float toolboxY = WORKBENCH_Y + 120.0f;
-    constexpr float toolboxWidth = 255.0f;
-    constexpr float toolboxHeight = 405.0f;
-    constexpr float buttonX = toolboxX + 34.0f;
-    constexpr float buttonY = toolboxY + 79.0f;
-    constexpr float buttonWidth = 187.0f;
-    constexpr float buttonHeight = 66.0f;
-    constexpr float buttonGap = 17.0f;
+    constexpr Color selectedToolColor{0.96f, 0.72f, 0.24f};
 
-    drawRectangle({toolboxX, toolboxY, toolboxWidth, toolboxHeight}, toolboxBorderColor);
+    drawRectangle({TOOLBOX_X, TOOLBOX_Y, TOOLBOX_WIDTH, TOOLBOX_HEIGHT}, toolboxBorderColor);
     drawRectangle(
-        {toolboxX + 10.0f, toolboxY + 10.0f, toolboxWidth - 20.0f, toolboxHeight - 20.0f},
+        {
+            TOOLBOX_X + 10.0f,
+            TOOLBOX_Y + 10.0f,
+            TOOLBOX_WIDTH - 20.0f,
+            TOOLBOX_HEIGHT - 20.0f,
+        },
         toolboxSurfaceColor);
     m_RobotoMonoPointerTextRenderer->draw(
         "TOOLBOX",
-        toolboxX + 36.0f,
-        toolboxY + 40.0f,
+        TOOLBOX_X + 36.0f,
+        TOOLBOX_Y + 40.0f,
         toolTextColor.red,
         toolTextColor.green,
         toolTextColor.blue,
         toolTextColor.alpha);
 
-    drawRectangle({buttonX, buttonY, buttonWidth, buttonHeight}, toolButtonColor);
     drawRectangle(
-        {buttonX, buttonY + buttonHeight + buttonGap, buttonWidth, buttonHeight},
-        toolButtonColor);
+        TAPE_TOOL_SLOT,
+        m_HeldTool == HeldTool::Tape ? selectedToolColor : toolButtonColor);
     drawRectangle(
-        {buttonX, buttonY + (2.0f * (buttonHeight + buttonGap)), buttonWidth, buttonHeight},
+        SCISSORS_TOOL_SLOT,
+        m_HeldTool == HeldTool::Scissors ? selectedToolColor : toolButtonColor);
+    drawRectangle(
+        ADVANCE_TOOL_SLOT,
         toolButtonColor);
     m_RobotoMonoPointerTextRenderer->draw(
         "TAPE",
-        buttonX + 56.0f,
-        buttonY + 44.0f,
+        TOOL_BUTTON_X + 56.0f,
+        TOOL_BUTTON_Y + 44.0f,
         inactiveTextColor.red,
         inactiveTextColor.green,
         inactiveTextColor.blue,
         inactiveTextColor.alpha);
     m_RobotoMonoPointerTextRenderer->draw(
         "SCISSORS",
-        buttonX + 20.0f,
-        buttonY + buttonHeight + buttonGap + 44.0f,
+        TOOL_BUTTON_X + 20.0f,
+        TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
         inactiveTextColor.red,
         inactiveTextColor.green,
         inactiveTextColor.blue,
         inactiveTextColor.alpha);
     m_RobotoMonoPointerTextRenderer->draw(
         "ADVANCE",
-        buttonX + 25.0f,
-        buttonY + (2.0f * (buttonHeight + buttonGap)) + 44.0f,
+        TOOL_BUTTON_X + 25.0f,
+        TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)) + 44.0f,
         inactiveTextColor.red,
         inactiveTextColor.green,
         inactiveTextColor.blue,
         inactiveTextColor.alpha);
+}
+
+void Application::drawHeldTool() const {
+    if (m_HeldTool == HeldTool::None || !Input::isMouseInsideCanvas()) {
+        return;
+    }
+
+    constexpr Color heldToolColor{0.97f, 0.82f, 0.40f};
+    constexpr std::string_view tapeLabel = "tape";
+    constexpr std::string_view scissorsLabel = "scissors";
+    const std::string_view label =
+        m_HeldTool == HeldTool::Tape ? tapeLabel : scissorsLabel;
+    const glm::vec2 mouse = Input::getMousePosition();
+    m_RobotoMonoPointerTextRenderer->draw(
+        label,
+        mouse.x + 16.0f,
+        mouse.y + 24.0f,
+        heldToolColor.red,
+        heldToolColor.green,
+        heldToolColor.blue,
+        heldToolColor.alpha);
 }
 
 void Application::drawCurrClamp() const {
@@ -708,6 +765,21 @@ void Application::drawRectangle(const render::Rectangle& rectangle, const Color&
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+std::optional<Application::HeldTool> Application::toolAt(float x, float y) const {
+    const auto contains = [x, y](const render::Rectangle& rectangle) {
+        return x >= rectangle.x && x <= rectangle.x + rectangle.width &&
+               y >= rectangle.y && y <= rectangle.y + rectangle.height;
+    };
+
+    if (contains(TAPE_TOOL_SLOT)) {
+        return HeldTool::Tape;
+    }
+    if (contains(SCISSORS_TOOL_SLOT)) {
+        return HeldTool::Scissors;
+    }
+    return std::nullopt;
 }
 
 void Application::bringToFront(const NodeReference& node) {

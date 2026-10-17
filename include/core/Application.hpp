@@ -29,6 +29,12 @@ private:
         float alpha = 1.0f;
     };
 
+    enum class HeldTool {
+        None,
+        Tape,
+        Scissors,
+    };
+
     struct ListExample {
         model::SinglyLinkedList<std::string> list;
         std::vector<view::NodeViewState> nodes;
@@ -63,6 +69,7 @@ private:
     void drawWorkbench() const;
     void drawToolbox() const;
     void drawCurrClamp() const;
+    void drawHeldTool() const;
     void drawNodeCard(const ListExample& example, const view::NodeViewState& node) const;
     void drawNodeText(const ListExample& example, const view::NodeViewState& node) const;
     void drawExampleConnections(const ListExample& example) const;
@@ -82,6 +89,7 @@ private:
         const Color& color) const;
     void drawRectangle(const render::Rectangle& rectangle, const Color& color) const;
     void bringToFront(const NodeReference& node);
+    [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTopmostCard(float x, float y) const;
     [[nodiscard]] bool isNodeHovered(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isNodeSelected(const ListExample& example, model::NodeId id) const;
@@ -104,6 +112,7 @@ private:
     std::optional<NodeReference> m_SelectedNode;
     std::optional<NodeReference> m_CurrNode;
     std::optional<DragState> m_DragState;
+    HeldTool m_HeldTool = HeldTool::None;
     unsigned int m_RectangleVertexArray = 0;
     unsigned int m_RectangleVertexBuffer = 0;
 };
