@@ -29,6 +29,7 @@ Thumbs.db
 
 # Personal logging
 *ideas/
+*.html
 
 # Repomix
 # npx repomix --ignore "build/**,bin/**,assets/fonts/**,assets/icon/*.ico,external/glad/**"
