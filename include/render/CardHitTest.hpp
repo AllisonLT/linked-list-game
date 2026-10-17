@@ -17,4 +17,16 @@ inline bool isPointInsideCard(const view::NodeViewState& node, float x, float y)
     return insideCard && !insideReferenceDock;
 }
 
+inline bool isPointInsideNextOutput(const view::NodeViewState& node, float x, float y) {
+    const NodeLayout layout = makeNodeLayout(node.x, node.y);
+    const float offsetX = x - layout.outputSocket.centerX;
+    const float offsetY = y - layout.outputSocket.centerY;
+    return offsetX * offsetX + offsetY * offsetY <=
+           layout.outputSocket.radius * layout.outputSocket.radius;
+}
+
+inline bool isPointInsideNextInput(const view::NodeViewState& node, float x, float y) {
+    return isPointInsideCard(node, x, y);
+}
+
 } // namespace game::render

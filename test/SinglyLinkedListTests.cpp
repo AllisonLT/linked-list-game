@@ -156,6 +156,30 @@ void testCardHitTesting() {
     require(
         !game::render::isPointInsideCard(node, 200.0f, 200.0f),
         "card excludes the external-reference dock");
+    require(
+        game::render::isPointInsideNextOutput(
+            node,
+            100.0f + game::render::NODE_CARD_WIDTH + 10.0f,
+            300.0f),
+        "next output includes the center of its full circular tab");
+    require(
+        game::render::isPointInsideNextOutput(
+            node,
+            100.0f + game::render::NODE_CARD_WIDTH + 50.0f,
+            300.0f),
+        "next output includes the boundary of its full circular tab");
+    require(
+        !game::render::isPointInsideNextOutput(
+            node,
+            100.0f + game::render::NODE_CARD_WIDTH + 51.0f,
+            300.0f),
+        "next output excludes points beyond its circular tab");
+    require(
+        game::render::isPointInsideNextInput(node, 200.0f, 300.0f),
+        "next input includes the selectable card body");
+    require(
+        !game::render::isPointInsideNextInput(node, 200.0f, 200.0f),
+        "next input excludes the external-reference dock");
 }
 
 void testDefinesNodeLayout() {
