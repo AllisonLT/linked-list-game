@@ -9,6 +9,7 @@
 #include "view/NodeViewState.hpp"
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -111,6 +112,7 @@ private:
         const Color& color) const;
     void drawRectangle(const render::Rectangle& rectangle, const Color& color) const;
     void bringToFront(const NodeReference& node);
+    [[nodiscard]] render::Rectangle randomClampEjectionPosition();
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
@@ -150,6 +152,7 @@ private:
     HeldTool m_HeldTool = HeldTool::None;
     AdvanceFeedback m_AdvanceFeedback = AdvanceFeedback::None;
     float m_AdvanceFeedbackRemaining = 0.0f;
+    std::mt19937 m_RandomEngine{std::random_device{}()};
     unsigned int m_RectangleVertexArray = 0;
     unsigned int m_RectangleVertexBuffer = 0;
 };

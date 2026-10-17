@@ -294,6 +294,17 @@ void Application::updateInteraction() {
             const float centerX = node.x + (render::NODE_CARD_WIDTH / 2.0f);
             const float centerY = node.y + (render::NODE_CARD_HEIGHT / 2.0f);
             if (isPointInsideRectangle(CLAMP_SLOT, centerX, centerY)) {
+                if (
+                    m_CurrNode &&
+                    (m_CurrNode->example != m_DragState->node.example ||
+                     m_CurrNode->id != m_DragState->node.id)) {
+                    view::NodeViewState& ejectedNode = findNodeVisual(
+                        m_CurrNode->example->nodes,
+                        m_CurrNode->id);
+                    const render::Rectangle ejectionPosition = randomClampEjectionPosition();
+                    ejectedNode.x = ejectionPosition.x;
+                    ejectedNode.y = ejectionPosition.y;
+                }
                 const float snapDeltaX = CLAMP_SLOT.x - node.x;
                 const float snapDeltaY = CLAMP_SLOT.y - node.y;
                 node.x = CLAMP_SLOT.x;
@@ -1068,6 +1079,30 @@ bool Application::isTapeSource(const ListExample& example, model::NodeId id) con
 bool Application::isTapeTarget(const ListExample& example, model::NodeId id) const {
     return m_HoveredTapeTarget && m_HoveredTapeTarget->example == &example &&
            m_HoveredTapeTarget->id == id;
+}
+
+render::Rectangle Application::randomClampEjectionPosition() {
+    constexpr float minimumHorizontalOffset = 50.0f;
+    constexpr float maximumHorizontalOffset = 400.0f;
+    constexpr float minimumVerticalOffset = 50.0f;
+    constexpr float maximumVerticalOffset = 200.0f;
+    std::uniform_real_distribution<float> horizontalOffsetDistribution(
+        minimumHorizontalOffset,
+        maximumHorizontalOffset);
+    std::uniform_real_distribution<float> verticalOffsetDistribution(
+        minimumVerticalOffset,
+        maximumVerticalOffset);
+    std::bernoulli_distribution directionDistribution;
+    const float horizontalOffset = horizontalOffsetDistribution(m_RandomEngine);
+
+    return {
+        .x = CLAMP_SLOT.x + (directionDistribution(m_RandomEngine)
+                                  ? horizontalOffset
+                                  : -horizontalOffset),
+        .y = CLAMP_SLOT.y + CLAMP_SLOT.height + verticalOffsetDistribution(m_RandomEngine),
+        .width = render::NODE_CARD_WIDTH,
+        .height = render::NODE_CARD_HEIGHT,
+    };
 }
 
 void Application::bringToFront(const NodeReference& node) {
