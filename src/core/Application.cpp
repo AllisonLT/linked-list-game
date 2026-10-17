@@ -319,12 +319,28 @@ void Application::drawToolbox() const {
         toolTextColor.blue,
         toolTextColor.alpha);
 
-    drawRectangle(
-        TAPE_TOOL_SLOT,
-        m_HeldTool == HeldTool::Tape ? selectedToolColor : toolButtonColor);
-    drawRectangle(
-        SCISSORS_TOOL_SLOT,
-        m_HeldTool == HeldTool::Scissors ? selectedToolColor : toolButtonColor);
+    if (m_HeldTool != HeldTool::Tape) {
+        drawRectangle(TAPE_TOOL_SLOT, toolButtonColor);
+        m_RobotoMonoPointerTextRenderer->draw(
+            "TAPE",
+            TOOL_BUTTON_X + 56.0f,
+            TOOL_BUTTON_Y + 44.0f,
+            inactiveTextColor.red,
+            inactiveTextColor.green,
+            inactiveTextColor.blue,
+            inactiveTextColor.alpha);
+    }
+    if (m_HeldTool != HeldTool::Scissors) {
+        drawRectangle(SCISSORS_TOOL_SLOT, toolButtonColor);
+        m_RobotoMonoPointerTextRenderer->draw(
+            "SCISSORS",
+            TOOL_BUTTON_X + 20.0f,
+            TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
+            inactiveTextColor.red,
+            inactiveTextColor.green,
+            inactiveTextColor.blue,
+            inactiveTextColor.alpha);
+    }
     if (m_AdvanceFeedback == AdvanceFeedback::Error) {
         drawRectangle(
             {
@@ -342,22 +358,6 @@ void Application::drawToolbox() const {
             : (m_AdvanceFeedback == AdvanceFeedback::Activated
                    ? selectedToolColor
                    : toolButtonColor));
-    m_RobotoMonoPointerTextRenderer->draw(
-        "TAPE",
-        TOOL_BUTTON_X + 56.0f,
-        TOOL_BUTTON_Y + 44.0f,
-        inactiveTextColor.red,
-        inactiveTextColor.green,
-        inactiveTextColor.blue,
-        inactiveTextColor.alpha);
-    m_RobotoMonoPointerTextRenderer->draw(
-        "SCISSORS",
-        TOOL_BUTTON_X + 20.0f,
-        TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
-        inactiveTextColor.red,
-        inactiveTextColor.green,
-        inactiveTextColor.blue,
-        inactiveTextColor.alpha);
     m_RobotoMonoPointerTextRenderer->draw(
         "ADVANCE",
         TOOL_BUTTON_X + 25.0f,
