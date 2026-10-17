@@ -30,6 +30,15 @@ constexpr float TOOL_BUTTON_Y = TOOLBOX_Y + 79.0f;
 constexpr float TOOL_BUTTON_WIDTH = 187.0f;
 constexpr float TOOL_BUTTON_HEIGHT = 66.0f;
 constexpr float TOOL_BUTTON_GAP = 17.0f;
+constexpr float CLAMP_CENTER_X = Window::TARGET_WIDTH / 2.0f;
+constexpr float CLAMP_Y = WORKBENCH_Y + 55.0f;
+constexpr float CLAMP_SLOT_SIZE = render::NODE_CARD_WIDTH;
+constexpr render::Rectangle CLAMP_SLOT{
+    CLAMP_CENTER_X - (CLAMP_SLOT_SIZE / 2.0f),
+    WORKBENCH_Y + 135.0f,
+    CLAMP_SLOT_SIZE,
+    CLAMP_SLOT_SIZE,
+};
 constexpr render::Rectangle TAPE_TOOL_SLOT{
     TOOL_BUTTON_X,
     TOOL_BUTTON_Y,
@@ -256,9 +265,8 @@ void Application::updateInteraction() {
     }
 
     if (m_DragState && m_HeldTool == HeldTool::None) {
-        if (Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
-            m_DragState.reset();
-        } else if (Input::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+        const bool mouseReleased = Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT);
+        if (Input::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) || mouseReleased) {
             view::NodeViewState& node = findNodeVisual(
                 m_DragState->node.example->nodes,
                 m_DragState->node.id);
@@ -278,6 +286,28 @@ void Application::updateInteraction() {
                 visual.x = downstreamNode.initialX + deltaX;
                 visual.y = downstreamNode.initialY + deltaY;
             }
+        }
+        if (mouseReleased) {
+            view::NodeViewState& node = findNodeVisual(
+                m_DragState->node.example->nodes,
+                m_DragState->node.id);
+            const float centerX = node.x + (render::NODE_CARD_WIDTH / 2.0f);
+            const float centerY = node.y + (render::NODE_CARD_HEIGHT / 2.0f);
+            if (isPointInsideRectangle(CLAMP_SLOT, centerX, centerY)) {
+                const float snapDeltaX = CLAMP_SLOT.x - node.x;
+                const float snapDeltaY = CLAMP_SLOT.y - node.y;
+                node.x = CLAMP_SLOT.x;
+                node.y = CLAMP_SLOT.y;
+                for (const DraggedNode& downstreamNode : m_DragState->downstreamNodes) {
+                    view::NodeViewState& visual = findNodeVisual(
+                        m_DragState->node.example->nodes,
+                        downstreamNode.id);
+                    visual.x += snapDeltaX;
+                    visual.y += snapDeltaY;
+                }
+                m_CurrNode = m_DragState->node;
+            }
+            m_DragState.reset();
         }
     }
 
@@ -360,12 +390,13 @@ void Application::drawWorkbench() const {
         tableSurfaceColor);
     m_RobotoRegularTextRenderer->draw(
         "Pointer Workbench",
-        WORKBENCH_X + 750.0f,
-        WORKBENCH_Y + 62.0f,
+        WORKBENCH_X + 32.0f,
+        WORKBENCH_Y + 45.0f,
         titleColor.red,
         titleColor.green,
         titleColor.blue,
         titleColor.alpha);
+    drawClampSlot();
     drawToolbox();
 }
 
@@ -446,6 +477,26 @@ void Application::drawToolbox() const {
         inactiveTextColor.alpha);
 }
 
+void Application::drawClampSlot() const {
+    constexpr Color dashColor{0.95f, 0.95f, 0.95f};
+    constexpr float dashLength = 18.0f;
+    constexpr float dashGap = 12.0f;
+    constexpr float dashWidth = 4.0f;
+    const float right = CLAMP_SLOT.x + CLAMP_SLOT.width;
+    const float bottom = CLAMP_SLOT.y + CLAMP_SLOT.height;
+
+    for (float x = CLAMP_SLOT.x; x < right; x += dashLength + dashGap) {
+        const float width = std::min(dashLength, right - x);
+        drawRectangle({x, CLAMP_SLOT.y, width, dashWidth}, dashColor);
+        drawRectangle({x, bottom - dashWidth, width, dashWidth}, dashColor);
+    }
+    for (float y = CLAMP_SLOT.y; y < bottom; y += dashLength + dashGap) {
+        const float height = std::min(dashLength, bottom - y);
+        drawRectangle({CLAMP_SLOT.x, y, dashWidth, height}, dashColor);
+        drawRectangle({right - dashWidth, y, dashWidth, height}, dashColor);
+    }
+}
+
 void Application::drawHeldTool() const {
     if (m_HeldTool == HeldTool::None || !Input::isMouseInsideCanvas()) {
         return;
@@ -501,42 +552,38 @@ void Application::drawCurrClamp() const {
     constexpr Color clampLabelColor{0.98f, 0.94f, 0.82f};
     constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
     std::optional<render::NodeLayout> attachedLayout;
-    float clampCenterX = Window::TARGET_WIDTH / 2.0f;
-    float clampY = 420.0f;
 
     if (m_CurrNode) {
         const view::NodeViewState& node = findNodeVisual(
             m_CurrNode->example->nodes,
             m_CurrNode->id);
         attachedLayout = layoutFor(node);
-        clampCenterX = attachedLayout->referenceDock.centerX;
-        clampY = attachedLayout->card.y - 150.0f;
     }
 
-    const float clampX = clampCenterX - 78.0f;
+    const float clampX = CLAMP_CENTER_X - 78.0f;
     constexpr float clampWidth = 156.0f;
     constexpr float clampHeight = 56.0f;
 
-    drawRectangle({clampX, clampY, clampWidth, clampHeight}, clampBodyColor);
+    drawRectangle({clampX, CLAMP_Y, clampWidth, clampHeight}, clampBodyColor);
     drawRectangle(
-        {clampX + 10.0f, clampY + 10.0f, clampWidth - 20.0f, clampHeight - 20.0f},
+        {clampX + 10.0f, CLAMP_Y + 10.0f, clampWidth - 20.0f, clampHeight - 20.0f},
         clampInsetColor);
     drawRectangle(
-        {clampCenterX - 9.0f, clampY + clampHeight, 18.0f, 34.0f},
+        {CLAMP_CENTER_X - 9.0f, CLAMP_Y + clampHeight, 18.0f, 34.0f},
         clampBodyColor);
     m_RobotoMonoPointerTextRenderer->draw(
         "curr",
-        clampCenterX - m_RobotoMonoPointerTextRenderer->measureWidth("curr") / 2.0f,
-        clampY + 36.0f,
+        CLAMP_CENTER_X - m_RobotoMonoPointerTextRenderer->measureWidth("curr") / 2.0f,
+        CLAMP_Y + 36.0f,
         clampLabelColor.red,
         clampLabelColor.green,
         clampLabelColor.blue,
         clampLabelColor.alpha);
     if (attachedLayout) {
         drawDirectionalPointer(
-            clampCenterX,
-            clampY + clampHeight + 34.0f,
-            clampCenterX,
+            CLAMP_CENTER_X,
+            CLAMP_Y + clampHeight + 34.0f,
+            attachedLayout->referenceDock.centerX,
             attachedLayout->referenceDock.centerY + attachedLayout->referenceDock.radius,
             pointerColor,
             1.0f);
@@ -1037,6 +1084,10 @@ void Application::bringToFront(const NodeReference& node) {
     const NodeReference selected = *iterator;
     m_DrawOrder.erase(iterator);
     m_DrawOrder.push_back(selected);
+
+    if (m_CurrNode && m_CurrNode->example == node.example && m_CurrNode->id == node.id) {
+        m_CurrNode.reset();
+    }
 }
 
 std::optional<Application::NodeReference> Application::findTopmostCard(float x, float y) const {

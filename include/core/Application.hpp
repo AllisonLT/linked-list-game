@@ -81,6 +81,7 @@ private:
     void createRectangleRenderer();
     void drawWorkbench() const;
     void drawToolbox() const;
+    void drawClampSlot() const;
     void drawCurrClamp() const;
     void drawHeldTool() const;
     void drawTapePreview() const;
