@@ -307,7 +307,7 @@ void testClampsCardCenterToCanvas() {
 
 void testLoadsThemeFromJson() {
     const game::core::Theme theme =
-        game::core::Theme::loadFromFile("assets/themes/test.json");
+        game::core::Theme::loadFromFile("assets/themes/test/colors.json");
 
     require(
         theme.canvas.background.red == 0.68f &&

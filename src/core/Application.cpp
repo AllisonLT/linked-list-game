@@ -84,7 +84,7 @@ constexpr float toNormalizedDeviceY(float canvasY) {
 } // namespace
 
 Application::Application() {
-    m_Theme = std::make_unique<Theme>(Theme::loadFromFile("assets/themes/test.json"));
+    m_Theme = std::make_unique<Theme>(Theme::loadFromFile("assets/themes/test/colors.json"));
     m_Window = std::make_unique<Window>(1280, 720, "Linked List Game", *m_Theme);
     Input::init(m_Window.get());
     m_ColorShader = std::make_unique<ShaderProgram>(
