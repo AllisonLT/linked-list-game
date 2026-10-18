@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Dispenser Body -->
+  <path d="M 20 88 C 20 54 44 40 68 40 L 98 40 C 104 40 108 46 106 52 L 102 88 C 100 92 96 96 90 96 L 28 96 C 24 96 20 92 20 88 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="3" stroke-linejoin="round" />
+  
+  <!-- Tape Spool Hub -->
+  <circle cx="52" cy="68" r="22" fill="#0284c7" />
+  <circle cx="52" cy="68" r="16" fill="#f8fafc" />
+  <circle cx="52" cy="68" r="8" fill="#38bdf8" />
+
+  <!-- Peeling Tape Strip -->
+  <path d="M 52 46 L 98 46 L 104 42" fill="none" stroke="#fef08a" stroke-width="6" stroke-linecap="round" opacity="0.85" />
+  
+  <!-- Metal Cutting Blade -->
+  <path d="M 98 38 L 106 38 L 102 44 Z" fill="#94a3b8" />
+</svg>
