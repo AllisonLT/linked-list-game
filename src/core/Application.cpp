@@ -823,12 +823,23 @@ void Application::drawNullEndpoint(const view::NodeViewState& node) const {
     constexpr Color labelColor{0.07f, 0.10f, 0.15f};
     constexpr float lineLength = 100.0f;
     constexpr float lineHeight = 8.0f;
+    constexpr float dashLength = 16.0f;
+    constexpr float dashGap = 10.0f;
     constexpr float labelGap = 20.0f;
 
     const render::NodeLayout layout = layoutFor(node);
     const float lineX = layout.outputSocket.centerX + layout.outputSocket.radius;
     const float lineY = layout.outputSocket.centerY - lineHeight / 2.0f;
-    drawRectangle({lineX, lineY, lineLength, lineHeight}, pointerColor);
+    for (float offset = 0.0f; offset < lineLength; offset += dashLength + dashGap) {
+        drawRectangle(
+            {
+                lineX + offset,
+                lineY,
+                std::min(dashLength, lineLength - offset),
+                lineHeight,
+            },
+            pointerColor);
+    }
     m_RobotoMonoPointerTextRenderer->draw(
         "nullptr",
         lineX + lineLength + labelGap,
