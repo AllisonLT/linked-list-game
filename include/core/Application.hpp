@@ -3,6 +3,7 @@
 #include "core/ShaderProgram.hpp"
 #include "core/TextRenderer.hpp"
 #include "core/Theme.hpp"
+#include "core/TextureRenderer.hpp"
 #include "core/Window.hpp"
 #include "model/SinglyLinkedList.hpp"
 #include "render/CardHitTest.hpp"
@@ -142,6 +143,10 @@ private:
     std::unique_ptr<TextRenderer> m_RobotoMonoValueTextRenderer;
     std::unique_ptr<TextRenderer> m_RobotoMonoPointerTextRenderer;
     std::unique_ptr<TextRenderer> m_RobotoRegularTextRenderer;
+    std::unique_ptr<TextureRenderer> m_TapeInactiveTexture;
+    std::unique_ptr<TextureRenderer> m_TapeActiveTexture;
+    std::unique_ptr<TextureRenderer> m_ScissorsInactiveTexture;
+    std::unique_ptr<TextureRenderer> m_ScissorsActiveTexture;
     ListExample m_CorrectExample;
     std::vector<NodeReference> m_DrawOrder;
     std::optional<NodeReference> m_HoveredNode;

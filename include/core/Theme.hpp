@@ -40,7 +40,6 @@ struct Theme {
             render::Color selected;
             render::Color error;
             render::Color errorGlow;
-            render::Color heldTool;
         };
 
         struct Clamp {

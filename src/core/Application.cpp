@@ -32,6 +32,8 @@ constexpr float TOOL_BUTTON_Y = TOOLBOX_Y + 79.0f;
 constexpr float TOOL_BUTTON_WIDTH = 187.0f;
 constexpr float TOOL_BUTTON_HEIGHT = 66.0f;
 constexpr float TOOL_BUTTON_GAP = 17.0f;
+constexpr float TOOL_ICON_SIZE = 54.0f;
+constexpr float HELD_TOOL_ICON_SIZE = 76.0f;
 constexpr float CLAMP_CENTER_X = Window::TARGET_WIDTH / 2.0f;
 constexpr float CLAMP_Y = WORKBENCH_Y + 55.0f;
 constexpr float CLAMP_SLOT_SIZE = render::NODE_CARD_WIDTH;
@@ -99,6 +101,14 @@ Application::Application() {
     m_RobotoRegularTextRenderer = std::make_unique<TextRenderer>(
         "assets/fonts/Roboto-Regular.ttf",
         32);
+    m_TapeInactiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/tape_inactive.png");
+    m_TapeActiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/tape_active.png");
+    m_ScissorsInactiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/scissors_inactive.png");
+    m_ScissorsActiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/scissors_active.png");
     const model::NodeId correctA = m_CorrectExample.list.emplaceNode("A");
     const model::NodeId correctB = m_CorrectExample.list.emplaceNode("B");
     const model::NodeId correctC = m_CorrectExample.list.emplaceNode("C");
@@ -444,9 +454,14 @@ void Application::drawToolbox() const {
     drawRectangle(TAPE_TOOL_SLOT, toolbox.button);
     drawRectangle(SCISSORS_TOOL_SLOT, toolbox.button);
     if (m_HeldTool != HeldTool::Tape) {
+        m_TapeInactiveTexture->draw(
+            TAPE_TOOL_SLOT.x + 6.0f,
+            TAPE_TOOL_SLOT.y + 6.0f,
+            TOOL_ICON_SIZE,
+            TOOL_ICON_SIZE);
         m_RobotoMonoPointerTextRenderer->draw(
             "TAPE",
-            TOOL_BUTTON_X + 56.0f,
+            TAPE_TOOL_SLOT.x + 74.0f,
             TOOL_BUTTON_Y + 44.0f,
             toolbox.inactiveLabel.red,
             toolbox.inactiveLabel.green,
@@ -454,9 +469,14 @@ void Application::drawToolbox() const {
             toolbox.inactiveLabel.alpha);
     }
     if (m_HeldTool != HeldTool::Scissors) {
+        m_ScissorsInactiveTexture->draw(
+            SCISSORS_TOOL_SLOT.x + 6.0f,
+            SCISSORS_TOOL_SLOT.y + 6.0f,
+            TOOL_ICON_SIZE,
+            TOOL_ICON_SIZE);
         m_RobotoMonoPointerTextRenderer->draw(
             "SCISSORS",
-            TOOL_BUTTON_X + 20.0f,
+            SCISSORS_TOOL_SLOT.x + 74.0f,
             TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
             toolbox.inactiveLabel.red,
             toolbox.inactiveLabel.green,
@@ -736,19 +756,14 @@ void Application::drawHeldTool() const {
         return;
     }
 
-    constexpr std::string_view tapeLabel = "tape";
-    constexpr std::string_view scissorsLabel = "scissors";
-    const std::string_view label =
-        m_HeldTool == HeldTool::Tape ? tapeLabel : scissorsLabel;
     const glm::vec2 mouse = Input::getMousePosition();
-    m_RobotoMonoPointerTextRenderer->draw(
-        label,
-        mouse.x + 16.0f,
-        mouse.y + 24.0f,
-        m_Theme->workbench.toolbox.heldTool.red,
-        m_Theme->workbench.toolbox.heldTool.green,
-        m_Theme->workbench.toolbox.heldTool.blue,
-        m_Theme->workbench.toolbox.heldTool.alpha);
+    const TextureRenderer& activeTexture =
+        m_HeldTool == HeldTool::Tape ? *m_TapeActiveTexture : *m_ScissorsActiveTexture;
+    activeTexture.draw(
+        mouse.x - (HELD_TOOL_ICON_SIZE / 2.0f),
+        mouse.y - (HELD_TOOL_ICON_SIZE / 2.0f),
+        HELD_TOOL_ICON_SIZE,
+        HELD_TOOL_ICON_SIZE);
 }
 
 void Application::drawTapePreview() const {

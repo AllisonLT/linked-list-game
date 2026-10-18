@@ -130,7 +130,6 @@ Theme Theme::loadFromFile(const std::filesystem::path& path) {
                     .selected = colorAt(toolbox, "selected", "workbench.toolbox.selected"),
                     .error = colorAt(toolbox, "error", "workbench.toolbox.error"),
                     .errorGlow = colorAt(toolbox, "errorGlow", "workbench.toolbox.errorGlow"),
-                    .heldTool = colorAt(toolbox, "heldTool", "workbench.toolbox.heldTool"),
                 },
                 .clamp = {
                     .body = colorAt(clamp, "body", "workbench.clamp.body"),
