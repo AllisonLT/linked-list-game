@@ -120,6 +120,7 @@ private:
     [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
+    [[nodiscard]] bool isToolSourceEligible(const NodeReference& node) const;
     [[nodiscard]] bool isScissorsTarget(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeSource(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeTarget(const ListExample& example, model::NodeId id) const;

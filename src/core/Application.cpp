@@ -1261,6 +1261,9 @@ bool Application::isAdvanceToolAt(float x, float y) const {
 
 std::optional<Application::NodeReference> Application::findScissorsTarget(float x, float y) const {
     for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        if (!isToolSourceEligible(*iterator)) {
+            continue;
+        }
         const view::NodeViewState& source = findNodeVisual(iterator->example->nodes, iterator->id);
         const std::optional<model::NodeId> destinationId =
             iterator->example->list.node(iterator->id).next;
@@ -1289,12 +1292,20 @@ std::optional<Application::NodeReference> Application::findScissorsTarget(float 
 
 std::optional<Application::NodeReference> Application::findTapeOutput(float x, float y) const {
     for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        if (!isToolSourceEligible(*iterator)) {
+            continue;
+        }
         const view::NodeViewState& node = findNodeVisual(iterator->example->nodes, iterator->id);
         if (render::isPointInsideNextOutput(node, x, y)) {
             return *iterator;
         }
     }
     return std::nullopt;
+}
+
+bool Application::isToolSourceEligible(const NodeReference& node) const {
+    return node.example->list.head() == node.id ||
+           (m_CurrNode && m_CurrNode->example == node.example && m_CurrNode->id == node.id);
 }
 
 bool Application::isScissorsTarget(const ListExample& example, model::NodeId id) const {
