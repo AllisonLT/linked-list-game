@@ -2,6 +2,7 @@
 
 #include "core/ShaderProgram.hpp"
 #include "core/TextRenderer.hpp"
+#include "core/Theme.hpp"
 #include "core/Window.hpp"
 #include "model/SinglyLinkedList.hpp"
 #include "render/CardHitTest.hpp"
@@ -23,12 +24,7 @@ public:
     int run();
 
 private:
-    struct Color {
-        float red;
-        float green;
-        float blue;
-        float alpha = 1.0f;
-    };
+    using Color = render::Color;
 
     enum class HeldTool {
         None,
@@ -137,6 +133,7 @@ private:
         const std::vector<view::NodeViewState>& nodes,
         model::NodeId id) const;
 
+    std::unique_ptr<Theme> m_Theme;
     std::unique_ptr<Window> m_Window;
     std::unique_ptr<ShaderProgram> m_ColorShader;
     std::unique_ptr<TextRenderer> m_RobotoMonoValueTextRenderer;

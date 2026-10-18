@@ -1,3 +1,4 @@
+#include "core/Theme.hpp"
 #include "render/CardHitTest.hpp"
 #include "render/PointerHitTest.hpp"
 #include "model/SinglyLinkedList.hpp"
@@ -298,6 +299,23 @@ void testClampsCardCenterToCanvas() {
         "clamped card center lies on the canvas boundary");
 }
 
+void testLoadsThemeFromJson() {
+    const game::core::Theme theme =
+        game::core::Theme::loadFromFile("assets/themes/test.json");
+
+    require(
+        theme.canvas.background.red == 0.68f &&
+            theme.canvas.background.green == 0.85f &&
+            theme.canvas.background.blue == 0.95f,
+        "theme loads canvas background color");
+    require(
+        theme.nodeCard.defaultFill.red == 0.07f &&
+            theme.nodeCard.defaultFill.green == 0.10f &&
+            theme.nodeCard.defaultFill.blue == 0.15f,
+        "theme loads node card color");
+    require(theme.nodeCard.palette.empty(), "theme preserves an empty node palette");
+}
+
 } // namespace
 
 int main() {
@@ -314,4 +332,5 @@ int main() {
     testPointerHitTesting();
     testDefinesNodeLayout();
     testClampsCardCenterToCanvas();
+    testLoadsThemeFromJson();
 }

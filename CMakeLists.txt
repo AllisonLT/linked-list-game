@@ -49,6 +49,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(freetype)
 
+message(STATUS "Fetching nlohmann/json...")
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # ---------------------------------------------------------------------------
 # 2. Local GLAD Loader (compiled as a static C library)
 # ---------------------------------------------------------------------------
@@ -96,6 +104,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     glm::glm
     freetype
+    nlohmann_json::nlohmann_json
     opengl32
 )
 
@@ -112,7 +121,14 @@ if(MINGW)
 endif()
 
 if(BUILD_TESTING)
-    add_executable(SinglyLinkedListTests test/SinglyLinkedListTests.cpp)
+    add_executable(SinglyLinkedListTests
+        test/SinglyLinkedListTests.cpp
+        src/core/Theme.cpp
+    )
     target_include_directories(SinglyLinkedListTests PRIVATE include)
+    target_link_libraries(SinglyLinkedListTests PRIVATE nlohmann_json::nlohmann_json)
     add_test(NAME SinglyLinkedListTests COMMAND SinglyLinkedListTests)
+    set_tests_properties(SinglyLinkedListTests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
 endif()

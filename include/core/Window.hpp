@@ -6,6 +6,8 @@
 
 namespace game::core {
 
+struct Theme;
+
 struct ViewportRect {
     int x = 0;
     int y = 0;
@@ -19,7 +21,7 @@ public:
     static constexpr float TARGET_HEIGHT = 1080.0f;
     static constexpr float TARGET_ASPECT = TARGET_WIDTH / TARGET_HEIGHT;
 
-    Window(int width, int height, const std::string& title);
+    Window(int width, int height, const std::string& title, const Theme& theme);
     ~Window();
 
     bool shouldClose() const;
@@ -38,6 +40,7 @@ private:
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
     GLFWwindow* m_Window = nullptr;
+    const Theme& m_Theme;
     ViewportRect m_Viewport;
 };
 

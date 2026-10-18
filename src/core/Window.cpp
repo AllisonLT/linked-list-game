@@ -1,12 +1,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "core/Theme.hpp"
 #include "core/Window.hpp"
 #include <iostream>
 #include <stdexcept>
 
 namespace game::core {
 
-Window::Window(int width, int height, const std::string& title) {
+Window::Window(int width, int height, const std::string& title, const Theme& theme)
+    : m_Theme(theme) {
     if (!glfwInit()) {
         throw std::runtime_error("Failed to initialize GLFW");
     }
@@ -73,21 +75,14 @@ void Window::pollEvents() {
 }
 
 void Window::beginRender() {
-    constexpr float windowBackgroundRed = 0.08f;
-    constexpr float windowBackgroundGreen = 0.12f;
-    constexpr float windowBackgroundBlue = 0.17f;
-    constexpr float canvasBackgroundRed = 0.68f;
-    constexpr float canvasBackgroundGreen = 0.85f;
-    constexpr float canvasBackgroundBlue = 0.95f;
-
     // Clear the physical window first so letterbox areas remain visually distinct.
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(m_Window, &fbWidth, &fbHeight);
     glViewport(0, 0, fbWidth, fbHeight);
     glClearColor(
-        windowBackgroundRed,
-        windowBackgroundGreen,
-        windowBackgroundBlue,
+        m_Theme.canvas.letterbox.red,
+        m_Theme.canvas.letterbox.green,
+        m_Theme.canvas.letterbox.blue,
         1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -96,9 +91,9 @@ void Window::beginRender() {
     glEnable(GL_SCISSOR_TEST);
     glScissor(m_Viewport.x, m_Viewport.y, m_Viewport.width, m_Viewport.height);
     glClearColor(
-        canvasBackgroundRed,
-        canvasBackgroundGreen,
-        canvasBackgroundBlue,
+        m_Theme.canvas.background.red,
+        m_Theme.canvas.background.green,
+        m_Theme.canvas.background.blue,
         1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);

@@ -84,7 +84,8 @@ constexpr float toNormalizedDeviceY(float canvasY) {
 } // namespace
 
 Application::Application() {
-    m_Window = std::make_unique<Window>(1280, 720, "Linked List Game");
+    m_Theme = std::make_unique<Theme>(Theme::loadFromFile("assets/themes/test.json"));
+    m_Window = std::make_unique<Window>(1280, 720, "Linked List Game", *m_Theme);
     Input::init(m_Window.get());
     m_ColorShader = std::make_unique<ShaderProgram>(
         "assets/shaders/solid_color.vert",
@@ -390,14 +391,12 @@ void Application::createRectangleRenderer() {
 }
 
 void Application::drawWorkbench() const {
-    constexpr Color tableBorderColor{0.26f, 0.15f, 0.08f};
-    constexpr Color tableSurfaceColor{0.68f, 0.48f, 0.28f};
-    constexpr Color titleColor{0.17f, 0.10f, 0.05f};
     constexpr float tableBorderWidth = 14.0f;
+    const Theme& theme = *m_Theme;
 
     drawRectangle(
         {WORKBENCH_X, WORKBENCH_Y, WORKBENCH_WIDTH, WORKBENCH_HEIGHT},
-        tableBorderColor);
+        theme.workbench.border);
     drawRectangle(
         {
             WORKBENCH_X + tableBorderWidth,
@@ -405,15 +404,15 @@ void Application::drawWorkbench() const {
             WORKBENCH_WIDTH - (2.0f * tableBorderWidth),
             WORKBENCH_HEIGHT - (2.0f * tableBorderWidth),
         },
-        tableSurfaceColor);
+        theme.workbench.surface);
     m_RobotoRegularTextRenderer->draw(
         "Pointer Workbench",
         WORKBENCH_X + 32.0f,
         WORKBENCH_Y + 45.0f,
-        titleColor.red,
-        titleColor.green,
-        titleColor.blue,
-        titleColor.alpha);
+        theme.workbench.title.red,
+        theme.workbench.title.green,
+        theme.workbench.title.blue,
+        theme.workbench.title.alpha);
     drawClampSlot();
     drawTemplateScroll();
     drawToolbox();
@@ -422,16 +421,9 @@ void Application::drawWorkbench() const {
 }
 
 void Application::drawToolbox() const {
-    constexpr Color toolboxBorderColor{0.20f, 0.12f, 0.07f};
-    constexpr Color toolboxSurfaceColor{0.40f, 0.24f, 0.12f};
-    constexpr Color toolButtonColor{0.73f, 0.55f, 0.30f};
-    constexpr Color toolTextColor{0.95f, 0.91f, 0.82f};
-    constexpr Color inactiveTextColor{0.32f, 0.19f, 0.08f};
-    constexpr Color selectedToolColor{0.96f, 0.72f, 0.24f};
-    constexpr Color errorToolColor{0.68f, 0.15f, 0.13f};
-    constexpr Color errorGlowColor{1.0f, 0.24f, 0.19f};
+    const Theme::Workbench::Toolbox& toolbox = m_Theme->workbench.toolbox;
 
-    drawRectangle({TOOLBOX_X, TOOLBOX_Y, TOOLBOX_WIDTH, TOOLBOX_HEIGHT}, toolboxBorderColor);
+    drawRectangle({TOOLBOX_X, TOOLBOX_Y, TOOLBOX_WIDTH, TOOLBOX_HEIGHT}, toolbox.border);
     drawRectangle(
         {
             TOOLBOX_X + 10.0f,
@@ -439,37 +431,37 @@ void Application::drawToolbox() const {
             TOOLBOX_WIDTH - 20.0f,
             TOOLBOX_HEIGHT - 20.0f,
         },
-        toolboxSurfaceColor);
+        toolbox.surface);
     m_RobotoMonoPointerTextRenderer->draw(
         "TOOLBOX",
         TOOLBOX_X + 36.0f,
         TOOLBOX_Y + 40.0f,
-        toolTextColor.red,
-        toolTextColor.green,
-        toolTextColor.blue,
-        toolTextColor.alpha);
+        toolbox.label.red,
+        toolbox.label.green,
+        toolbox.label.blue,
+        toolbox.label.alpha);
 
-    drawRectangle(TAPE_TOOL_SLOT, toolButtonColor);
-    drawRectangle(SCISSORS_TOOL_SLOT, toolButtonColor);
+    drawRectangle(TAPE_TOOL_SLOT, toolbox.button);
+    drawRectangle(SCISSORS_TOOL_SLOT, toolbox.button);
     if (m_HeldTool != HeldTool::Tape) {
         m_RobotoMonoPointerTextRenderer->draw(
             "TAPE",
             TOOL_BUTTON_X + 56.0f,
             TOOL_BUTTON_Y + 44.0f,
-            inactiveTextColor.red,
-            inactiveTextColor.green,
-            inactiveTextColor.blue,
-            inactiveTextColor.alpha);
+            toolbox.inactiveLabel.red,
+            toolbox.inactiveLabel.green,
+            toolbox.inactiveLabel.blue,
+            toolbox.inactiveLabel.alpha);
     }
     if (m_HeldTool != HeldTool::Scissors) {
         m_RobotoMonoPointerTextRenderer->draw(
             "SCISSORS",
             TOOL_BUTTON_X + 20.0f,
             TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
-            inactiveTextColor.red,
-            inactiveTextColor.green,
-            inactiveTextColor.blue,
-            inactiveTextColor.alpha);
+            toolbox.inactiveLabel.red,
+            toolbox.inactiveLabel.green,
+            toolbox.inactiveLabel.blue,
+            toolbox.inactiveLabel.alpha);
     }
     if (m_AdvanceFeedback == AdvanceFeedback::Error) {
         drawRectangle(
@@ -479,27 +471,26 @@ void Application::drawToolbox() const {
                 ADVANCE_TOOL_SLOT.width + 12.0f,
                 ADVANCE_TOOL_SLOT.height + 12.0f,
             },
-            errorGlowColor);
+            toolbox.errorGlow);
     }
     drawRectangle(
         ADVANCE_TOOL_SLOT,
         m_AdvanceFeedback == AdvanceFeedback::Error
-            ? errorToolColor
+            ? toolbox.error
             : (m_AdvanceFeedback == AdvanceFeedback::Activated
-                   ? selectedToolColor
-                   : toolButtonColor));
+                   ? toolbox.selected
+                   : toolbox.button));
     m_RobotoMonoPointerTextRenderer->draw(
         "ADVANCE",
         TOOL_BUTTON_X + 25.0f,
         TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)) + 44.0f,
-        inactiveTextColor.red,
-        inactiveTextColor.green,
-        inactiveTextColor.blue,
-        inactiveTextColor.alpha);
+        toolbox.inactiveLabel.red,
+        toolbox.inactiveLabel.green,
+        toolbox.inactiveLabel.blue,
+        toolbox.inactiveLabel.alpha);
 }
 
 void Application::drawClampSlot() const {
-    constexpr Color dashColor{0.95f, 0.95f, 0.95f};
     constexpr float dashLength = 18.0f;
     constexpr float dashGap = 12.0f;
     constexpr float dashWidth = 4.0f;
@@ -508,20 +499,21 @@ void Application::drawClampSlot() const {
 
     for (float x = CLAMP_SLOT.x; x < right; x += dashLength + dashGap) {
         const float width = std::min(dashLength, right - x);
-        drawRectangle({x, CLAMP_SLOT.y, width, dashWidth}, dashColor);
-        drawRectangle({x, bottom - dashWidth, width, dashWidth}, dashColor);
+        drawRectangle({x, CLAMP_SLOT.y, width, dashWidth}, m_Theme->workbench.clamp.slotOutline);
+        drawRectangle(
+            {x, bottom - dashWidth, width, dashWidth},
+            m_Theme->workbench.clamp.slotOutline);
     }
     for (float y = CLAMP_SLOT.y; y < bottom; y += dashLength + dashGap) {
         const float height = std::min(dashLength, bottom - y);
-        drawRectangle({CLAMP_SLOT.x, y, dashWidth, height}, dashColor);
-        drawRectangle({right - dashWidth, y, dashWidth, height}, dashColor);
+        drawRectangle({CLAMP_SLOT.x, y, dashWidth, height}, m_Theme->workbench.clamp.slotOutline);
+        drawRectangle(
+            {right - dashWidth, y, dashWidth, height},
+            m_Theme->workbench.clamp.slotOutline);
     }
 }
 
 void Application::drawTemplateScroll() const {
-    constexpr Color scrollShadowColor{0.31f, 0.20f, 0.10f};
-    constexpr Color scrollColor{0.96f, 0.93f, 0.82f};
-    constexpr Color scrollRollColor{0.78f, 0.68f, 0.48f};
     constexpr render::Rectangle scroll{
         WORKBENCH_X + 42.0f,
         WORKBENCH_Y + 105.0f,
@@ -531,45 +523,49 @@ void Application::drawTemplateScroll() const {
 
     drawRectangle(
         {scroll.x + 9.0f, scroll.y + 10.0f, scroll.width, scroll.height},
-        scrollShadowColor);
-    drawRectangle(scroll, scrollColor);
-    drawRectangle({scroll.x - 8.0f, scroll.y - 10.0f, scroll.width + 16.0f, 20.0f}, scrollRollColor);
+        m_Theme->workbench.templateScroll.shadow);
+    drawRectangle(scroll, m_Theme->workbench.templateScroll.paper);
+    drawRectangle(
+        {scroll.x - 8.0f, scroll.y - 10.0f, scroll.width + 16.0f, 20.0f},
+        m_Theme->workbench.templateScroll.roll);
     drawRectangle(
         {scroll.x - 8.0f, scroll.y + scroll.height - 10.0f, scroll.width + 16.0f, 20.0f},
-        scrollRollColor);
+        m_Theme->workbench.templateScroll.roll);
 }
 
 void Application::drawRubbishBin() const {
-    constexpr Color binLidColor{0.19f, 0.24f, 0.30f};
-    constexpr Color binBodyColor{0.28f, 0.35f, 0.42f};
-    constexpr Color binDetailColor{0.44f, 0.53f, 0.61f};
-    constexpr Color labelColor{0.14f, 0.18f, 0.23f};
     constexpr float binX = 1660.0f;
     constexpr float binY = DRAWER_Y + DRAWER_HEIGHT + 34.0f;
     constexpr float binWidth = 150.0f;
     constexpr float binHeight = 160.0f;
 
-    drawRectangle({binX - 12.0f, binY, binWidth + 24.0f, 18.0f}, binLidColor);
-    drawRectangle({binX, binY + 18.0f, binWidth, binHeight}, binBodyColor);
-    drawRectangle({binX + 36.0f, binY - 12.0f, binWidth - 72.0f, 12.0f}, binLidColor);
-    drawRectangle({binX + 40.0f, binY + 38.0f, 10.0f, binHeight - 38.0f}, binDetailColor);
-    drawRectangle({binX + 70.0f, binY + 38.0f, 10.0f, binHeight - 38.0f}, binDetailColor);
-    drawRectangle({binX + 100.0f, binY + 38.0f, 10.0f, binHeight - 38.0f}, binDetailColor);
+    drawRectangle(
+        {binX - 12.0f, binY, binWidth + 24.0f, 18.0f},
+        m_Theme->workbench.rubbishBin.lid);
+    drawRectangle({binX, binY + 18.0f, binWidth, binHeight}, m_Theme->workbench.rubbishBin.body);
+    drawRectangle(
+        {binX + 36.0f, binY - 12.0f, binWidth - 72.0f, 12.0f},
+        m_Theme->workbench.rubbishBin.lid);
+    drawRectangle(
+        {binX + 40.0f, binY + 38.0f, 10.0f, binHeight - 38.0f},
+        m_Theme->workbench.rubbishBin.detail);
+    drawRectangle(
+        {binX + 70.0f, binY + 38.0f, 10.0f, binHeight - 38.0f},
+        m_Theme->workbench.rubbishBin.detail);
+    drawRectangle(
+        {binX + 100.0f, binY + 38.0f, 10.0f, binHeight - 38.0f},
+        m_Theme->workbench.rubbishBin.detail);
     m_RobotoMonoPointerTextRenderer->draw(
         "BIN",
         binX + 56.0f,
         binY + binHeight + 46.0f,
-        labelColor.red,
-        labelColor.green,
-        labelColor.blue,
-        labelColor.alpha);
+        m_Theme->workbench.rubbishBin.label.red,
+        m_Theme->workbench.rubbishBin.label.green,
+        m_Theme->workbench.rubbishBin.label.blue,
+        m_Theme->workbench.rubbishBin.label.alpha);
 }
 
 void Application::drawDrawers() const {
-    constexpr Color drawerFrameColor{0.24f, 0.14f, 0.08f};
-    constexpr Color drawerFaceColor{0.56f, 0.36f, 0.18f};
-    constexpr Color handleColor{0.78f, 0.61f, 0.35f};
-    constexpr Color labelColor{0.20f, 0.12f, 0.06f};
     constexpr render::Rectangle codeDrawer{80.0f, DRAWER_Y, 1320.0f, DRAWER_HEIGHT};
     constexpr render::Rectangle hintDrawer{1450.0f, DRAWER_Y, 380.0f, DRAWER_HEIGHT};
 
@@ -580,8 +576,8 @@ void Application::drawDrawers() const {
             codeDrawer.width + 12.0f,
             codeDrawer.height + 12.0f,
         },
-        drawerFrameColor);
-    drawRectangle(codeDrawer, drawerFaceColor);
+        m_Theme->workbench.drawers.frame);
+    drawRectangle(codeDrawer, m_Theme->workbench.drawers.face);
     drawRectangle(
         {
             hintDrawer.x - 6.0f,
@@ -589,8 +585,8 @@ void Application::drawDrawers() const {
             hintDrawer.width + 12.0f,
             hintDrawer.height + 12.0f,
         },
-        drawerFrameColor);
-    drawRectangle(hintDrawer, drawerFaceColor);
+        m_Theme->workbench.drawers.frame);
+    drawRectangle(hintDrawer, m_Theme->workbench.drawers.face);
     drawRectangle(
         {
             codeDrawer.x + (codeDrawer.width / 2.0f) - 70.0f,
@@ -598,7 +594,7 @@ void Application::drawDrawers() const {
             140.0f,
             10.0f,
         },
-        handleColor);
+        m_Theme->workbench.drawers.handle);
     drawRectangle(
         {
             hintDrawer.x + (hintDrawer.width / 2.0f) - 45.0f,
@@ -606,23 +602,23 @@ void Application::drawDrawers() const {
             90.0f,
             10.0f,
         },
-        handleColor);
+        m_Theme->workbench.drawers.handle);
     m_RobotoMonoPointerTextRenderer->draw(
         "CODE DRAWER",
         codeDrawer.x + 36.0f,
         codeDrawer.y + 37.0f,
-        labelColor.red,
-        labelColor.green,
-        labelColor.blue,
-        labelColor.alpha);
+        m_Theme->workbench.drawers.label.red,
+        m_Theme->workbench.drawers.label.green,
+        m_Theme->workbench.drawers.label.blue,
+        m_Theme->workbench.drawers.label.alpha);
     m_RobotoMonoPointerTextRenderer->draw(
         "[LOCKED] HINTS",
         hintDrawer.x + 38.0f,
         hintDrawer.y + 37.0f,
-        labelColor.red,
-        labelColor.green,
-        labelColor.blue,
-        labelColor.alpha);
+        m_Theme->workbench.drawers.label.red,
+        m_Theme->workbench.drawers.label.green,
+        m_Theme->workbench.drawers.label.blue,
+        m_Theme->workbench.drawers.label.alpha);
 }
 
 void Application::drawHeldTool() const {
@@ -630,7 +626,6 @@ void Application::drawHeldTool() const {
         return;
     }
 
-    constexpr Color heldToolColor{0.97f, 0.82f, 0.40f};
     constexpr std::string_view tapeLabel = "tape";
     constexpr std::string_view scissorsLabel = "scissors";
     const std::string_view label =
@@ -640,10 +635,10 @@ void Application::drawHeldTool() const {
         label,
         mouse.x + 16.0f,
         mouse.y + 24.0f,
-        heldToolColor.red,
-        heldToolColor.green,
-        heldToolColor.blue,
-        heldToolColor.alpha);
+        m_Theme->workbench.toolbox.heldTool.red,
+        m_Theme->workbench.toolbox.heldTool.green,
+        m_Theme->workbench.toolbox.heldTool.blue,
+        m_Theme->workbench.toolbox.heldTool.alpha);
 }
 
 void Application::drawTapePreview() const {
@@ -651,7 +646,6 @@ void Application::drawTapePreview() const {
         return;
     }
 
-    constexpr Color tapePreviewColor{0.96f, 0.72f, 0.24f};
     const view::NodeViewState& source = findNodeVisual(
         m_TapeDrag->source.example->nodes,
         m_TapeDrag->source.id);
@@ -662,7 +656,7 @@ void Application::drawTapePreview() const {
         layout.outputSocket.centerY,
         mouse.x,
         mouse.y,
-        tapePreviewColor,
+        m_Theme->workbench.toolbox.selected,
         1.0f);
 }
 
@@ -675,10 +669,6 @@ void Application::triggerAdvanceFeedback() {
 }
 
 void Application::drawCurrClamp() const {
-    constexpr Color clampBodyColor{0.88f, 0.64f, 0.20f};
-    constexpr Color clampInsetColor{0.27f, 0.18f, 0.08f};
-    constexpr Color clampLabelColor{0.98f, 0.94f, 0.82f};
-    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
     std::optional<render::NodeLayout> attachedLayout;
 
     if (m_CurrNode) {
@@ -692,28 +682,28 @@ void Application::drawCurrClamp() const {
     constexpr float clampWidth = 156.0f;
     constexpr float clampHeight = 56.0f;
 
-    drawRectangle({clampX, CLAMP_Y, clampWidth, clampHeight}, clampBodyColor);
+    drawRectangle({clampX, CLAMP_Y, clampWidth, clampHeight}, m_Theme->workbench.clamp.body);
     drawRectangle(
         {clampX + 10.0f, CLAMP_Y + 10.0f, clampWidth - 20.0f, clampHeight - 20.0f},
-        clampInsetColor);
+        m_Theme->workbench.clamp.inset);
     drawRectangle(
         {CLAMP_CENTER_X - 9.0f, CLAMP_Y + clampHeight, 18.0f, 34.0f},
-        clampBodyColor);
+        m_Theme->workbench.clamp.body);
     m_RobotoMonoPointerTextRenderer->draw(
         "curr",
         CLAMP_CENTER_X - m_RobotoMonoPointerTextRenderer->measureWidth("curr") / 2.0f,
         CLAMP_Y + 36.0f,
-        clampLabelColor.red,
-        clampLabelColor.green,
-        clampLabelColor.blue,
-        clampLabelColor.alpha);
+        m_Theme->workbench.clamp.label.red,
+        m_Theme->workbench.clamp.label.green,
+        m_Theme->workbench.clamp.label.blue,
+        m_Theme->workbench.clamp.label.alpha);
     if (attachedLayout) {
         drawDirectionalPointer(
             CLAMP_CENTER_X,
             CLAMP_Y + clampHeight + 34.0f,
             attachedLayout->referenceDock.centerX,
             attachedLayout->referenceDock.centerY + attachedLayout->referenceDock.radius,
-            pointerColor,
+            m_Theme->pointer.normal,
             1.0f);
     }
 }
@@ -721,12 +711,6 @@ void Application::drawCurrClamp() const {
 void Application::drawNodeCard(
     const ListExample& example,
     const view::NodeViewState& node) const {
-    constexpr Color nodeColor{0.07f, 0.10f, 0.15f};
-    constexpr Color hoverOutline{0.18f, 0.58f, 0.95f};
-    constexpr Color selectedOutline{0.08f, 0.37f, 0.88f};
-    constexpr Color selectedNodeColor{0.05f, 0.15f, 0.29f};
-    constexpr Color tapeSourceOutline{0.91f, 0.50f, 0.17f};
-    constexpr Color tapeTargetOutline{0.96f, 0.72f, 0.24f};
     constexpr float hoverOutlineWidth = 5.0f;
     constexpr float selectedOutlineWidth = 8.0f;
     constexpr float tapeSourceOutlineWidth = 7.0f;
@@ -740,19 +724,22 @@ void Application::drawNodeCard(
                                    ? tapeTargetOutlineWidth
                                    : (selected ? selectedOutlineWidth
                                                : (hovered ? hoverOutlineWidth : 0.0f));
-    const Color& cardColor = selected ? selectedNodeColor : nodeColor;
+    const Color& cardColor =
+        selected ? m_Theme->nodeCard.selectedFill : m_Theme->nodeCard.defaultFill;
 
     if (tapeSource) {
         drawCircle(
             layout.outputSocket.centerX,
             layout.outputSocket.centerY,
             layout.outputSocket.radius + tapeSourceOutlineWidth,
-            tapeSourceOutline);
+            m_Theme->nodeCard.tapeSourceGlow);
     }
 
     if (outlineWidth > 0.0f) {
         const Color& outlineColor =
-            tapeTarget ? tapeTargetOutline : (selected ? selectedOutline : hoverOutline);
+            tapeTarget ? m_Theme->nodeCard.tapeTargetGlow
+                       : (selected ? m_Theme->nodeCard.selectedGlow
+                                   : m_Theme->nodeCard.hoverGlow);
         drawNodeSilhouette(layout, outlineWidth, outlineColor);
     }
 
@@ -762,7 +749,6 @@ void Application::drawNodeCard(
 void Application::drawNodeText(
     const ListExample& example,
     const view::NodeViewState& node) const {
-    constexpr Color nodeTextColor{0.92f, 0.96f, 1.0f};
     constexpr std::string_view nextLabel = "next";
     const render::NodeLayout layout = layoutFor(node);
     const std::string& value = example.list.node(node.id).value;
@@ -777,18 +763,18 @@ void Application::drawNodeText(
         value,
         valueX,
         layout.card.y + (layout.card.height + 32.0f) / 2.0f,
-        nodeTextColor.red,
-        nodeTextColor.green,
-        nodeTextColor.blue,
-        nodeTextColor.alpha);
+        m_Theme->nodeCard.text.red,
+        m_Theme->nodeCard.text.green,
+        m_Theme->nodeCard.text.blue,
+        m_Theme->nodeCard.text.alpha);
     m_RobotoMonoPointerTextRenderer->draw(
         nextLabel,
         pointerLabelX,
         layout.outputSocket.centerY + 7.0f,
-        nodeTextColor.red,
-        nodeTextColor.green,
-        nodeTextColor.blue,
-        nodeTextColor.alpha);
+        m_Theme->nodeCard.text.red,
+        m_Theme->nodeCard.text.green,
+        m_Theme->nodeCard.text.blue,
+        m_Theme->nodeCard.text.alpha);
 }
 
 void Application::drawExampleConnections(const ListExample& example) const {
@@ -797,10 +783,6 @@ void Application::drawExampleConnections(const ListExample& example) const {
 }
 
 void Application::drawListPointers(const ListExample& example) const {
-    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
-    constexpr Color scissorsGlowColor{1.0f, 0.59f, 0.24f};
-    constexpr Color scissorsPointerColor{1.0f, 0.83f, 0.41f};
-
     for (const view::NodeViewState& source : example.nodes) {
         const std::optional<model::NodeId> destinationId = example.list.node(source.id).next;
         if (!destinationId) {
@@ -816,7 +798,7 @@ void Application::drawListPointers(const ListExample& example) const {
                 sourceLayout.outputSocket.centerY,
                 destinationLayout.card.x,
                 destinationLayout.card.y + destinationLayout.card.height / 2.0f,
-                scissorsGlowColor,
+                m_Theme->pointer.scissorsGlow,
                 1.7f);
         }
         drawDirectionalPointer(
@@ -824,14 +806,14 @@ void Application::drawListPointers(const ListExample& example) const {
             sourceLayout.outputSocket.centerY,
             destinationLayout.card.x,
             destinationLayout.card.y + destinationLayout.card.height / 2.0f,
-            isScissorsTarget(example, source.id) ? scissorsPointerColor : pointerColor,
+            isScissorsTarget(example, source.id)
+                ? m_Theme->pointer.scissorsHighlight
+                : m_Theme->pointer.normal,
             1.0f);
     }
 }
 
 void Application::drawHeadIndicator(const ListExample& example) const {
-    constexpr Color labelColor{0.07f, 0.10f, 0.15f};
-    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
     constexpr std::string_view headLabel = "head";
 
     const std::optional<model::NodeId> headId = example.list.head();
@@ -847,16 +829,16 @@ void Application::drawHeadIndicator(const ListExample& example) const {
         layout.card.y - 80.0f,
         centerX,
         layout.referenceDock.centerY + layout.referenceDock.radius,
-        pointerColor,
+        m_Theme->pointer.normal,
         1.0f);
     m_RobotoRegularTextRenderer->draw(
         headLabel,
         centerX - m_RobotoRegularTextRenderer->measureWidth(headLabel) / 2.0f,
         layout.card.y - 100.0f,
-        labelColor.red,
-        labelColor.green,
-        labelColor.blue,
-        labelColor.alpha);
+        m_Theme->pointer.label.red,
+        m_Theme->pointer.label.green,
+        m_Theme->pointer.label.blue,
+        m_Theme->pointer.label.alpha);
 }
 
 void Application::drawNullEndpoints(const ListExample& example) const {
@@ -931,8 +913,6 @@ void Application::drawDirectionalPointer(
 }
 
 void Application::drawNullEndpoint(const view::NodeViewState& node) const {
-    constexpr Color pointerColor{0.16f, 0.29f, 0.42f};
-    constexpr Color labelColor{0.07f, 0.10f, 0.15f};
     constexpr float lineLength = 100.0f;
     constexpr float lineHeight = 8.0f;
     constexpr float dashLength = 16.0f;
@@ -950,16 +930,16 @@ void Application::drawNullEndpoint(const view::NodeViewState& node) const {
                 std::min(dashLength, lineLength - offset),
                 lineHeight,
             },
-            pointerColor);
+            m_Theme->pointer.normal);
     }
     m_RobotoMonoPointerTextRenderer->draw(
         "nullptr",
         lineX + lineLength + labelGap,
         layout.outputSocket.centerY + 7.0f,
-        labelColor.red,
-        labelColor.green,
-        labelColor.blue,
-        labelColor.alpha);
+        m_Theme->pointer.label.red,
+        m_Theme->pointer.label.green,
+        m_Theme->pointer.label.blue,
+        m_Theme->pointer.label.alpha);
 }
 
 void Application::drawNodeSilhouette(
