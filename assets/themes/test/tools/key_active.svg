@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Warm brass/gold gradient matching drawer hardware -->
+    <linearGradient id="brassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="35%" stop-color="#fbbf24" />
+      <stop offset="70%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+  </defs>
+
+  <!-- Group rotated -45° so the shaft and tip point directly to top-left -->
+  <g transform="rotate(-45 64 64)">
+    
+    <!-- Skeleton Key Notched Bit (Teeth) -->
+    <path d="
+      M 60 24
+      H 44
+      C 42 24 41 25 41 27
+      V 31
+      H 50
+      V 35
+      H 41
+      V 43
+      C 41 45 42 46 44 46
+      H 60
+      Z" fill="url(#brassGrad)" stroke="#78350f" stroke-width="2" stroke-linejoin="round" />
+
+    <!-- Main Cylindrical Shaft -->
+    <rect x="60" y="20" width="8" height="52" rx="4" fill="url(#brassGrad)" stroke="#78350f" stroke-width="2" />
+
+    <!-- Specular Highlight down the Shaft -->
+    <line x1="62" y1="24" x2="62" y2="70" stroke="#fef9c3" stroke-width="1.5" stroke-linecap="round" opacity="0.85" />
+
+    <!-- Tip Finial Bulb -->
+    <circle cx="64" cy="20" r="5" fill="url(#brassGrad)" stroke="#78350f" stroke-width="2" />
+    <circle cx="63" cy="19" r="1.5" fill="#fef9c3" opacity="0.9" />
+
+    <!-- Decorative Shaft Collar Rings -->
+    <rect x="56" y="69" width="16" height="4" rx="2" fill="url(#brassGrad)" stroke="#78350f" stroke-width="1.5" />
+    <rect x="57.5" y="74" width="13" height="3" rx="1.5" fill="url(#brassGrad)" stroke="#78350f" stroke-width="1.5" />
+
+    <!-- Bow / Handle Ring (Hollow compound path so canvas background shows through) -->
+    <path d="
+      M 64 77
+      A 18 18 0 1 0 64 113
+      A 18 18 0 1 0 64 77
+      Z
+      M 64 86
+      A 9 9 0 1 1 64 104
+      A 9 9 0 1 1 64 86
+      Z" fill-rule="evenodd" fill="url(#brassGrad)" stroke="#78350f" stroke-width="2.5" />
+
+    <!-- Bow Inner Bevel Highlight -->
+    <path d="M 52 86 A 15 15 0 0 1 76 86" fill="none" stroke="#fef9c3" stroke-width="1.5" stroke-linecap="round" opacity="0.75" />
+  </g>
+</svg>
