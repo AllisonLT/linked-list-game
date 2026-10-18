@@ -21,10 +21,12 @@ constexpr float WORKBENCH_X = 60.0f;
 constexpr float WORKBENCH_Y = 50.0f;
 constexpr float WORKBENCH_WIDTH = Window::TARGET_WIDTH - (2.0f * WORKBENCH_X);
 constexpr float WORKBENCH_HEIGHT = (Window::TARGET_HEIGHT * 3.0f) / 5.0f;
-constexpr float TOOLBOX_X = WORKBENCH_X + 50.0f;
-constexpr float TOOLBOX_Y = WORKBENCH_Y + 120.0f;
+constexpr float DRAWER_Y = WORKBENCH_Y + WORKBENCH_HEIGHT;
+constexpr float DRAWER_HEIGHT = 50.0f;
 constexpr float TOOLBOX_WIDTH = 255.0f;
 constexpr float TOOLBOX_HEIGHT = 405.0f;
+constexpr float TOOLBOX_X = WORKBENCH_X + WORKBENCH_WIDTH - TOOLBOX_WIDTH - 50.0f;
+constexpr float TOOLBOX_Y = WORKBENCH_Y + 120.0f;
 constexpr float TOOL_BUTTON_X = TOOLBOX_X + 34.0f;
 constexpr float TOOL_BUTTON_Y = TOOLBOX_Y + 79.0f;
 constexpr float TOOL_BUTTON_WIDTH = 187.0f;
@@ -413,7 +415,10 @@ void Application::drawWorkbench() const {
         titleColor.blue,
         titleColor.alpha);
     drawClampSlot();
+    drawTemplateScroll();
     drawToolbox();
+    drawRubbishBin();
+    drawDrawers();
 }
 
 void Application::drawToolbox() const {
@@ -511,6 +516,113 @@ void Application::drawClampSlot() const {
         drawRectangle({CLAMP_SLOT.x, y, dashWidth, height}, dashColor);
         drawRectangle({right - dashWidth, y, dashWidth, height}, dashColor);
     }
+}
+
+void Application::drawTemplateScroll() const {
+    constexpr Color scrollShadowColor{0.31f, 0.20f, 0.10f};
+    constexpr Color scrollColor{0.96f, 0.93f, 0.82f};
+    constexpr Color scrollRollColor{0.78f, 0.68f, 0.48f};
+    constexpr render::Rectangle scroll{
+        WORKBENCH_X + 42.0f,
+        WORKBENCH_Y + 105.0f,
+        350.0f,
+        390.0f,
+    };
+
+    drawRectangle(
+        {scroll.x + 9.0f, scroll.y + 10.0f, scroll.width, scroll.height},
+        scrollShadowColor);
+    drawRectangle(scroll, scrollColor);
+    drawRectangle({scroll.x - 8.0f, scroll.y - 10.0f, scroll.width + 16.0f, 20.0f}, scrollRollColor);
+    drawRectangle(
+        {scroll.x - 8.0f, scroll.y + scroll.height - 10.0f, scroll.width + 16.0f, 20.0f},
+        scrollRollColor);
+}
+
+void Application::drawRubbishBin() const {
+    constexpr Color binLidColor{0.19f, 0.24f, 0.30f};
+    constexpr Color binBodyColor{0.28f, 0.35f, 0.42f};
+    constexpr Color binDetailColor{0.44f, 0.53f, 0.61f};
+    constexpr Color labelColor{0.14f, 0.18f, 0.23f};
+    constexpr float binX = 1660.0f;
+    constexpr float binY = DRAWER_Y + DRAWER_HEIGHT + 34.0f;
+    constexpr float binWidth = 150.0f;
+    constexpr float binHeight = 160.0f;
+
+    drawRectangle({binX - 12.0f, binY, binWidth + 24.0f, 18.0f}, binLidColor);
+    drawRectangle({binX, binY + 18.0f, binWidth, binHeight}, binBodyColor);
+    drawRectangle({binX + 36.0f, binY - 12.0f, binWidth - 72.0f, 12.0f}, binLidColor);
+    drawRectangle({binX + 40.0f, binY + 38.0f, 10.0f, binHeight - 38.0f}, binDetailColor);
+    drawRectangle({binX + 70.0f, binY + 38.0f, 10.0f, binHeight - 38.0f}, binDetailColor);
+    drawRectangle({binX + 100.0f, binY + 38.0f, 10.0f, binHeight - 38.0f}, binDetailColor);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "BIN",
+        binX + 56.0f,
+        binY + binHeight + 46.0f,
+        labelColor.red,
+        labelColor.green,
+        labelColor.blue,
+        labelColor.alpha);
+}
+
+void Application::drawDrawers() const {
+    constexpr Color drawerFrameColor{0.24f, 0.14f, 0.08f};
+    constexpr Color drawerFaceColor{0.56f, 0.36f, 0.18f};
+    constexpr Color handleColor{0.78f, 0.61f, 0.35f};
+    constexpr Color labelColor{0.20f, 0.12f, 0.06f};
+    constexpr render::Rectangle codeDrawer{80.0f, DRAWER_Y, 1320.0f, DRAWER_HEIGHT};
+    constexpr render::Rectangle hintDrawer{1450.0f, DRAWER_Y, 380.0f, DRAWER_HEIGHT};
+
+    drawRectangle(
+        {
+            codeDrawer.x - 6.0f,
+            codeDrawer.y - 6.0f,
+            codeDrawer.width + 12.0f,
+            codeDrawer.height + 12.0f,
+        },
+        drawerFrameColor);
+    drawRectangle(codeDrawer, drawerFaceColor);
+    drawRectangle(
+        {
+            hintDrawer.x - 6.0f,
+            hintDrawer.y - 6.0f,
+            hintDrawer.width + 12.0f,
+            hintDrawer.height + 12.0f,
+        },
+        drawerFrameColor);
+    drawRectangle(hintDrawer, drawerFaceColor);
+    drawRectangle(
+        {
+            codeDrawer.x + (codeDrawer.width / 2.0f) - 70.0f,
+            codeDrawer.y + 20.0f,
+            140.0f,
+            10.0f,
+        },
+        handleColor);
+    drawRectangle(
+        {
+            hintDrawer.x + (hintDrawer.width / 2.0f) - 45.0f,
+            hintDrawer.y + 20.0f,
+            90.0f,
+            10.0f,
+        },
+        handleColor);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "CODE DRAWER",
+        codeDrawer.x + 36.0f,
+        codeDrawer.y + 37.0f,
+        labelColor.red,
+        labelColor.green,
+        labelColor.blue,
+        labelColor.alpha);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "[LOCKED] HINTS",
+        hintDrawer.x + 38.0f,
+        hintDrawer.y + 37.0f,
+        labelColor.red,
+        labelColor.green,
+        labelColor.blue,
+        labelColor.alpha);
 }
 
 void Application::drawHeldTool() const {

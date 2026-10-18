@@ -83,6 +83,9 @@ private:
     void drawWorkbench() const;
     void drawToolbox() const;
     void drawClampSlot() const;
+    void drawTemplateScroll() const;
+    void drawRubbishBin() const;
+    void drawDrawers() const;
     void drawCurrClamp() const;
     void drawHeldTool() const;
     void drawTapePreview() const;
