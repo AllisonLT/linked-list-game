@@ -491,6 +491,20 @@ void Application::drawToolbox() const {
 }
 
 void Application::drawClampSlot() const {
+    if (m_DragState && m_HeldTool == HeldTool::None) {
+        const view::NodeViewState& draggedNode = findNodeVisual(
+            m_DragState->node.example->nodes,
+            m_DragState->node.id);
+        const float centerX = draggedNode.x + (render::NODE_CARD_WIDTH / 2.0f);
+        const float centerY = draggedNode.y + (render::NODE_CARD_HEIGHT / 2.0f);
+        if (isPointInsideRectangle(CLAMP_SLOT, centerX, centerY)) {
+            drawDashedNodeSilhouette(
+                render::makeNodeLayout(CLAMP_SLOT.x, CLAMP_SLOT.y),
+                m_Theme->workbench.clamp.dropPreview);
+            return;
+        }
+    }
+
     constexpr float dashLength = 18.0f;
     constexpr float dashGap = 12.0f;
     constexpr float dashWidth = 4.0f;
@@ -511,6 +525,80 @@ void Application::drawClampSlot() const {
             {right - dashWidth, y, dashWidth, height},
             m_Theme->workbench.clamp.slotOutline);
     }
+}
+
+void Application::drawDashedNodeSilhouette(
+    const render::NodeLayout& layout,
+    const Color& color) const {
+    constexpr float dashLength = 18.0f;
+    constexpr float dashGap = 12.0f;
+    constexpr float dashWidth = 4.0f;
+    constexpr float dashSpacing = dashLength + dashGap;
+    constexpr int circleSegments = 24;
+
+    const auto drawHorizontalDashes = [this, &color, dashLength](float left, float right, float y) {
+        for (float x = left; x < right; x += dashSpacing) {
+            drawRectangle(
+                {x, y - (dashWidth / 2.0f), std::min(dashLength, right - x), dashWidth},
+                color);
+        }
+    };
+    const auto drawVerticalDashes = [this, &color, dashLength](float x, float top, float bottom) {
+        for (float y = top; y < bottom; y += dashSpacing) {
+            drawRectangle(
+                {x - (dashWidth / 2.0f), y, dashWidth, std::min(dashLength, bottom - y)},
+                color);
+        }
+    };
+    const auto drawDashedCircle = [this, &color](const render::Circle& circle) {
+        constexpr int dashCount = 9;
+        for (int dash = 0; dash < dashCount; ++dash) {
+            const float angle = (2.0f * PI * dash) / dashCount;
+            drawCircle(
+                circle.centerX + (circle.radius * std::cos(angle)),
+                circle.centerY + (circle.radius * std::sin(angle)),
+                dashWidth / 2.0f,
+                color);
+        }
+    };
+
+    const float cardLeft = layout.card.x;
+    const float cardRight = layout.card.x + layout.card.width;
+    const float cardTop = layout.card.y;
+    const float cardBottom = layout.card.y + layout.card.height;
+    const float dockTopOffset = cardTop - layout.referenceDock.centerY;
+    const float dockIntersectionOffset = std::sqrt(
+        (layout.referenceDock.radius * layout.referenceDock.radius) -
+        (dockTopOffset * dockTopOffset));
+    const float dockLeft = layout.referenceDock.centerX - dockIntersectionOffset;
+    const float dockRight = layout.referenceDock.centerX + dockIntersectionOffset;
+
+    drawHorizontalDashes(cardLeft, dockLeft, cardTop);
+    drawHorizontalDashes(dockRight, cardRight, cardTop);
+    drawHorizontalDashes(cardLeft, cardRight, cardBottom);
+    drawVerticalDashes(cardLeft, cardTop, cardBottom);
+    drawVerticalDashes(cardRight, cardTop, cardBottom);
+
+    const float dockStartAngle = std::atan2(
+        cardTop - layout.referenceDock.centerY,
+        dockLeft - layout.referenceDock.centerX);
+    const float dockEndAngle = std::atan2(
+        cardTop - layout.referenceDock.centerY,
+        dockRight - layout.referenceDock.centerX) -
+                               (2.0f * PI);
+    for (int segment = 0; segment <= circleSegments; ++segment) {
+        if (segment % 2 != 0) {
+            continue;
+        }
+        const float progress = static_cast<float>(segment) / circleSegments;
+        const float angle = dockStartAngle + ((dockEndAngle - dockStartAngle) * progress);
+        drawCircle(
+            layout.referenceDock.centerX + (layout.referenceDock.radius * std::cos(angle)),
+            layout.referenceDock.centerY + (layout.referenceDock.radius * std::sin(angle)),
+            dashWidth / 2.0f,
+            color);
+    }
+    drawDashedCircle(layout.outputSocket);
 }
 
 void Application::drawTemplateScroll() const {

@@ -137,6 +137,7 @@ Theme Theme::loadFromFile(const std::filesystem::path& path) {
                     .inset = colorAt(clamp, "inset", "workbench.clamp.inset"),
                     .label = colorAt(clamp, "label", "workbench.clamp.label"),
                     .slotOutline = colorAt(clamp, "slotOutline", "workbench.clamp.slotOutline"),
+                    .dropPreview = colorAt(clamp, "dropPreview", "workbench.clamp.dropPreview"),
                 },
                 .templateScroll = {
                     .shadow = colorAt(templateScroll, "shadow", "workbench.templateScroll.shadow"),

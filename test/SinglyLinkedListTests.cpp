@@ -325,6 +325,9 @@ void testLoadsThemeFromJson() {
             theme.nodeCard.palette.at(2).green == 0.52f &&
             theme.nodeCard.palette.at(2).blue == 0.99f,
         "theme preserves palette color order");
+    require(
+        theme.workbench.clamp.dropPreview.blue == 0.95f,
+        "theme loads the clamp drop preview color");
 }
 
 } // namespace

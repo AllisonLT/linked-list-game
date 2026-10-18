@@ -79,6 +79,9 @@ private:
     void drawWorkbench() const;
     void drawToolbox() const;
     void drawClampSlot() const;
+    void drawDashedNodeSilhouette(
+        const render::NodeLayout& layout,
+        const Color& color) const;
     void drawTemplateScroll() const;
     void drawRubbishBin() const;
     void drawDrawers() const;

@@ -48,6 +48,7 @@ struct Theme {
             render::Color inset;
             render::Color label;
             render::Color slotOutline;
+            render::Color dropPreview;
         };
 
         struct TemplateScroll {
