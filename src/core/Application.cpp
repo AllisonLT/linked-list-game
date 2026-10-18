@@ -34,11 +34,18 @@ constexpr float TOOL_BUTTON_HEIGHT = 66.0f;
 constexpr float TOOL_BUTTON_GAP = 17.0f;
 constexpr float TOOL_ICON_SIZE = 54.0f;
 constexpr float HELD_TOOL_ICON_SIZE = 76.0f;
-constexpr float CLAMP_CENTER_X = Window::TARGET_WIDTH / 2.0f;
+constexpr float CURR_CLAMP_CENTER_X = Window::TARGET_WIDTH / 2.0f;
+constexpr float TEMP_CLAMP_CENTER_X = CURR_CLAMP_CENTER_X + 290.0f;
 constexpr float CLAMP_Y = WORKBENCH_Y + 55.0f;
 constexpr float CLAMP_SLOT_SIZE = render::NODE_CARD_WIDTH;
-constexpr render::Rectangle CLAMP_SLOT{
-    CLAMP_CENTER_X - (CLAMP_SLOT_SIZE / 2.0f),
+constexpr render::Rectangle CURR_CLAMP_SLOT{
+    CURR_CLAMP_CENTER_X - (CLAMP_SLOT_SIZE / 2.0f),
+    WORKBENCH_Y + 135.0f,
+    CLAMP_SLOT_SIZE,
+    CLAMP_SLOT_SIZE,
+};
+constexpr render::Rectangle TEMP_CLAMP_SLOT{
+    TEMP_CLAMP_CENTER_X - (CLAMP_SLOT_SIZE / 2.0f),
     WORKBENCH_Y + 135.0f,
     CLAMP_SLOT_SIZE,
     CLAMP_SLOT_SIZE,
@@ -181,7 +188,8 @@ void Application::render() {
         drawNodeText(*reference.example, node);
     }
     drawHeadIndicator(m_CorrectExample);
-    drawCurrClamp();
+    drawClamp(CURR_CLAMP_CENTER_X, "curr", m_CurrNode);
+    drawClamp(TEMP_CLAMP_CENTER_X, "temp", m_TempNode);
     drawTapePreview();
     drawHeldTool();
     m_Window->endRender();
@@ -219,7 +227,7 @@ void Application::updateInteraction() {
                     .pressY = mouse.y,
                 };
             } else if (m_TapeDrag) {
-                if (const std::optional<NodeReference> target = findTopmostCard(mouse.x, mouse.y)) {
+                if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
                     m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
                 }
                 m_TapeDrag.reset();
@@ -237,7 +245,7 @@ void Application::updateInteraction() {
         if (
             m_TapeDrag && m_TapeDrag->isDragging &&
             Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
-            if (const std::optional<NodeReference> target = findTopmostCard(mouse.x, mouse.y)) {
+            if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
                 m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
             }
             m_TapeDrag.reset();
@@ -253,9 +261,7 @@ void Application::updateInteraction() {
             std::vector<DraggedNode> downstreamNodes;
             for (const model::NodeId downstreamId :
                  hitNode->example->list.downstreamNodeIds(hitNode->id)) {
-                if (
-                    m_CurrNode && m_CurrNode->example == hitNode->example &&
-                    m_CurrNode->id == downstreamId) {
+                if (isNodeClamped({.example = hitNode->example, .id = downstreamId})) {
                     break;
                 }
                 const view::NodeViewState& downstreamNode = findNodeVisual(
@@ -311,30 +317,10 @@ void Application::updateInteraction() {
                 m_DragState->node.id);
             const float centerX = node.x + (render::NODE_CARD_WIDTH / 2.0f);
             const float centerY = node.y + (render::NODE_CARD_HEIGHT / 2.0f);
-            if (isPointInsideRectangle(CLAMP_SLOT, centerX, centerY)) {
-                if (
-                    m_CurrNode &&
-                    (m_CurrNode->example != m_DragState->node.example ||
-                     m_CurrNode->id != m_DragState->node.id)) {
-                    view::NodeViewState& ejectedNode = findNodeVisual(
-                        m_CurrNode->example->nodes,
-                        m_CurrNode->id);
-                    const render::Rectangle ejectionPosition = randomClampEjectionPosition();
-                    ejectedNode.x = ejectionPosition.x;
-                    ejectedNode.y = ejectionPosition.y;
-                }
-                const float snapDeltaX = CLAMP_SLOT.x - node.x;
-                const float snapDeltaY = CLAMP_SLOT.y - node.y;
-                node.x = CLAMP_SLOT.x;
-                node.y = CLAMP_SLOT.y;
-                for (const DraggedNode& downstreamNode : m_DragState->downstreamNodes) {
-                    view::NodeViewState& visual = findNodeVisual(
-                        m_DragState->node.example->nodes,
-                        downstreamNode.id);
-                    visual.x += snapDeltaX;
-                    visual.y += snapDeltaY;
-                }
-                m_CurrNode = m_DragState->node;
+            if (isPointInsideRectangle(CURR_CLAMP_SLOT, centerX, centerY)) {
+                attachDraggedNodeToClamp(m_CurrNode, CURR_CLAMP_SLOT);
+            } else if (isPointInsideRectangle(TEMP_CLAMP_SLOT, centerX, centerY)) {
+                attachDraggedNodeToClamp(m_TempNode, TEMP_CLAMP_SLOT);
             }
             m_DragState.reset();
         }
@@ -373,7 +359,7 @@ void Application::updateHoveredTapeTarget() {
     }
 
     const glm::vec2 mouse = Input::getMousePosition();
-    m_HoveredTapeTarget = findTopmostCard(mouse.x, mouse.y);
+    m_HoveredTapeTarget = findTapeTarget(mouse.x, mouse.y);
 }
 
 void Application::updateHoveredTapeSource() {
@@ -423,7 +409,8 @@ void Application::drawWorkbench() const {
         theme.workbench.title.green,
         theme.workbench.title.blue,
         theme.workbench.title.alpha);
-    drawClampSlot();
+    drawClampSlot(CURR_CLAMP_SLOT);
+    drawClampSlot(TEMP_CLAMP_SLOT);
     drawTemplateScroll();
     drawToolbox();
     drawRubbishBin();
@@ -510,16 +497,16 @@ void Application::drawToolbox() const {
         toolbox.inactiveLabel.alpha);
 }
 
-void Application::drawClampSlot() const {
+void Application::drawClampSlot(const render::Rectangle& slot) const {
     if (m_DragState && m_HeldTool == HeldTool::None) {
         const view::NodeViewState& draggedNode = findNodeVisual(
             m_DragState->node.example->nodes,
             m_DragState->node.id);
         const float centerX = draggedNode.x + (render::NODE_CARD_WIDTH / 2.0f);
         const float centerY = draggedNode.y + (render::NODE_CARD_HEIGHT / 2.0f);
-        if (isPointInsideRectangle(CLAMP_SLOT, centerX, centerY)) {
+        if (isPointInsideRectangle(slot, centerX, centerY)) {
             drawDashedNodeSilhouette(
-                render::makeNodeLayout(CLAMP_SLOT.x, CLAMP_SLOT.y),
+                render::makeNodeLayout(slot.x, slot.y),
                 m_Theme->workbench.clamp.dropPreview);
             return;
         }
@@ -528,19 +515,19 @@ void Application::drawClampSlot() const {
     constexpr float dashLength = 18.0f;
     constexpr float dashGap = 12.0f;
     constexpr float dashWidth = 4.0f;
-    const float right = CLAMP_SLOT.x + CLAMP_SLOT.width;
-    const float bottom = CLAMP_SLOT.y + CLAMP_SLOT.height;
+    const float right = slot.x + slot.width;
+    const float bottom = slot.y + slot.height;
 
-    for (float x = CLAMP_SLOT.x; x < right; x += dashLength + dashGap) {
+    for (float x = slot.x; x < right; x += dashLength + dashGap) {
         const float width = std::min(dashLength, right - x);
-        drawRectangle({x, CLAMP_SLOT.y, width, dashWidth}, m_Theme->workbench.clamp.slotOutline);
+        drawRectangle({x, slot.y, width, dashWidth}, m_Theme->workbench.clamp.slotOutline);
         drawRectangle(
             {x, bottom - dashWidth, width, dashWidth},
             m_Theme->workbench.clamp.slotOutline);
     }
-    for (float y = CLAMP_SLOT.y; y < bottom; y += dashLength + dashGap) {
+    for (float y = slot.y; y < bottom; y += dashLength + dashGap) {
         const float height = std::min(dashLength, bottom - y);
-        drawRectangle({CLAMP_SLOT.x, y, dashWidth, height}, m_Theme->workbench.clamp.slotOutline);
+        drawRectangle({slot.x, y, dashWidth, height}, m_Theme->workbench.clamp.slotOutline);
         drawRectangle(
             {right - dashWidth, y, dashWidth, height},
             m_Theme->workbench.clamp.slotOutline);
@@ -793,17 +780,20 @@ void Application::triggerAdvanceFeedback() {
     m_AdvanceFeedbackRemaining = ADVANCE_FEEDBACK_DURATION;
 }
 
-void Application::drawCurrClamp() const {
+void Application::drawClamp(
+    float centerX,
+    const char* label,
+    const std::optional<NodeReference>& attachedNode) const {
     std::optional<render::NodeLayout> attachedLayout;
 
-    if (m_CurrNode) {
+    if (attachedNode) {
         const view::NodeViewState& node = findNodeVisual(
-            m_CurrNode->example->nodes,
-            m_CurrNode->id);
+            attachedNode->example->nodes,
+            attachedNode->id);
         attachedLayout = layoutFor(node);
     }
 
-    const float clampX = CLAMP_CENTER_X - 78.0f;
+    const float clampX = centerX - 78.0f;
     constexpr float clampWidth = 156.0f;
     constexpr float clampHeight = 56.0f;
 
@@ -812,11 +802,11 @@ void Application::drawCurrClamp() const {
         {clampX + 10.0f, CLAMP_Y + 10.0f, clampWidth - 20.0f, clampHeight - 20.0f},
         m_Theme->workbench.clamp.inset);
     drawRectangle(
-        {CLAMP_CENTER_X - 9.0f, CLAMP_Y + clampHeight, 18.0f, 34.0f},
+        {centerX - 9.0f, CLAMP_Y + clampHeight, 18.0f, 34.0f},
         m_Theme->workbench.clamp.body);
     m_RobotoMonoPointerTextRenderer->draw(
-        "curr",
-        CLAMP_CENTER_X - m_RobotoMonoPointerTextRenderer->measureWidth("curr") / 2.0f,
+        label,
+        centerX - m_RobotoMonoPointerTextRenderer->measureWidth(label) / 2.0f,
         CLAMP_Y + 36.0f,
         m_Theme->workbench.clamp.label.red,
         m_Theme->workbench.clamp.label.green,
@@ -824,7 +814,7 @@ void Application::drawCurrClamp() const {
         m_Theme->workbench.clamp.label.alpha);
     if (attachedLayout) {
         drawDirectionalPointer(
-            CLAMP_CENTER_X,
+            centerX,
             CLAMP_Y + clampHeight + 34.0f,
             attachedLayout->referenceDock.centerX,
             attachedLayout->referenceDock.centerY + attachedLayout->referenceDock.radius,
@@ -1261,7 +1251,7 @@ bool Application::isAdvanceToolAt(float x, float y) const {
 
 std::optional<Application::NodeReference> Application::findScissorsTarget(float x, float y) const {
     for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
-        if (!isToolSourceEligible(*iterator)) {
+        if (!isExternallyReferenced(*iterator)) {
             continue;
         }
         const view::NodeViewState& source = findNodeVisual(iterator->example->nodes, iterator->id);
@@ -1292,7 +1282,7 @@ std::optional<Application::NodeReference> Application::findScissorsTarget(float 
 
 std::optional<Application::NodeReference> Application::findTapeOutput(float x, float y) const {
     for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
-        if (!isToolSourceEligible(*iterator)) {
+        if (!isExternallyReferenced(*iterator)) {
             continue;
         }
         const view::NodeViewState& node = findNodeVisual(iterator->example->nodes, iterator->id);
@@ -1303,9 +1293,28 @@ std::optional<Application::NodeReference> Application::findTapeOutput(float x, f
     return std::nullopt;
 }
 
-bool Application::isToolSourceEligible(const NodeReference& node) const {
+std::optional<Application::NodeReference> Application::findTapeTarget(float x, float y) const {
+    for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        if (!isExternallyReferenced(*iterator)) {
+            continue;
+        }
+        const view::NodeViewState& node = findNodeVisual(iterator->example->nodes, iterator->id);
+        if (render::isPointInsideNextInput(node, x, y)) {
+            return *iterator;
+        }
+    }
+    return std::nullopt;
+}
+
+bool Application::isExternallyReferenced(const NodeReference& node) const {
     return node.example->list.head() == node.id ||
-           (m_CurrNode && m_CurrNode->example == node.example && m_CurrNode->id == node.id);
+           (m_CurrNode && m_CurrNode->example == node.example && m_CurrNode->id == node.id) ||
+           (m_TempNode && m_TempNode->example == node.example && m_TempNode->id == node.id);
+}
+
+bool Application::isNodeClamped(const NodeReference& node) const {
+    return (m_CurrNode && m_CurrNode->example == node.example && m_CurrNode->id == node.id) ||
+           (m_TempNode && m_TempNode->example == node.example && m_TempNode->id == node.id);
 }
 
 bool Application::isScissorsTarget(const ListExample& example, model::NodeId id) const {
@@ -1327,7 +1336,43 @@ bool Application::isTapeTarget(const ListExample& example, model::NodeId id) con
            m_HoveredTapeTarget->id == id;
 }
 
-render::Rectangle Application::randomClampEjectionPosition() {
+void Application::attachDraggedNodeToClamp(
+    std::optional<NodeReference>& attachedNode,
+    const render::Rectangle& slot) {
+    if (!m_DragState) {
+        throw std::logic_error("Cannot attach a node without an active drag");
+    }
+
+    view::NodeViewState& node = findNodeVisual(
+        m_DragState->node.example->nodes,
+        m_DragState->node.id);
+    if (
+        attachedNode &&
+        (attachedNode->example != m_DragState->node.example ||
+         attachedNode->id != m_DragState->node.id)) {
+        view::NodeViewState& ejectedNode = findNodeVisual(
+            attachedNode->example->nodes,
+            attachedNode->id);
+        const render::Rectangle ejectionPosition = randomClampEjectionPosition(slot);
+        ejectedNode.x = ejectionPosition.x;
+        ejectedNode.y = ejectionPosition.y;
+    }
+
+    const float snapDeltaX = slot.x - node.x;
+    const float snapDeltaY = slot.y - node.y;
+    node.x = slot.x;
+    node.y = slot.y;
+    for (const DraggedNode& downstreamNode : m_DragState->downstreamNodes) {
+        view::NodeViewState& visual = findNodeVisual(
+            m_DragState->node.example->nodes,
+            downstreamNode.id);
+        visual.x += snapDeltaX;
+        visual.y += snapDeltaY;
+    }
+    attachedNode = m_DragState->node;
+}
+
+render::Rectangle Application::randomClampEjectionPosition(const render::Rectangle& slot) {
     constexpr float minimumHorizontalOffset = 50.0f;
     constexpr float maximumHorizontalOffset = 400.0f;
     constexpr float minimumVerticalOffset = 50.0f;
@@ -1342,10 +1387,8 @@ render::Rectangle Application::randomClampEjectionPosition() {
     const float horizontalOffset = horizontalOffsetDistribution(m_RandomEngine);
 
     return {
-        .x = CLAMP_SLOT.x + (directionDistribution(m_RandomEngine)
-                                  ? horizontalOffset
-                                  : -horizontalOffset),
-        .y = CLAMP_SLOT.y + CLAMP_SLOT.height + verticalOffsetDistribution(m_RandomEngine),
+        .x = slot.x + (directionDistribution(m_RandomEngine) ? horizontalOffset : -horizontalOffset),
+        .y = slot.y + slot.height + verticalOffsetDistribution(m_RandomEngine),
         .width = render::NODE_CARD_WIDTH,
         .height = render::NODE_CARD_HEIGHT,
     };
@@ -1368,6 +1411,9 @@ void Application::bringToFront(const NodeReference& node) {
 
     if (m_CurrNode && m_CurrNode->example == node.example && m_CurrNode->id == node.id) {
         m_CurrNode.reset();
+    }
+    if (m_TempNode && m_TempNode->example == node.example && m_TempNode->id == node.id) {
+        m_TempNode.reset();
     }
 }
 

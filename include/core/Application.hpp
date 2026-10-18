@@ -79,14 +79,17 @@ private:
     void createRectangleRenderer();
     void drawWorkbench() const;
     void drawToolbox() const;
-    void drawClampSlot() const;
+    void drawClampSlot(const render::Rectangle& slot) const;
     void drawDashedNodeSilhouette(
         const render::NodeLayout& layout,
         const Color& color) const;
     void drawTemplateScroll() const;
     void drawRubbishBin() const;
     void drawDrawers() const;
-    void drawCurrClamp() const;
+    void drawClamp(
+        float centerX,
+        const char* label,
+        const std::optional<NodeReference>& attachedNode) const;
     void drawHeldTool() const;
     void drawTapePreview() const;
     void triggerAdvanceFeedback();
@@ -115,12 +118,18 @@ private:
         const Color& color) const;
     void drawRectangle(const render::Rectangle& rectangle, const Color& color) const;
     void bringToFront(const NodeReference& node);
-    [[nodiscard]] render::Rectangle randomClampEjectionPosition();
+    void attachDraggedNodeToClamp(
+        std::optional<NodeReference>& attachedNode,
+        const render::Rectangle& slot);
+    [[nodiscard]] render::Rectangle randomClampEjectionPosition(
+        const render::Rectangle& slot);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
-    [[nodiscard]] bool isToolSourceEligible(const NodeReference& node) const;
+    [[nodiscard]] std::optional<NodeReference> findTapeTarget(float x, float y) const;
+    [[nodiscard]] bool isExternallyReferenced(const NodeReference& node) const;
+    [[nodiscard]] bool isNodeClamped(const NodeReference& node) const;
     [[nodiscard]] bool isScissorsTarget(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeSource(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeTarget(const ListExample& example, model::NodeId id) const;
@@ -153,6 +162,7 @@ private:
     std::optional<NodeReference> m_HoveredNode;
     std::optional<NodeReference> m_SelectedNode;
     std::optional<NodeReference> m_CurrNode;
+    std::optional<NodeReference> m_TempNode;
     std::optional<DragState> m_DragState;
     std::optional<NodeReference> m_HoveredScissorsTarget;
     std::optional<TapeDragState> m_TapeDrag;
