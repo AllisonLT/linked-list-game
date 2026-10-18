@@ -531,6 +531,28 @@ void Application::drawTemplateScroll() const {
     drawRectangle(
         {scroll.x - 8.0f, scroll.y + scroll.height - 10.0f, scroll.width + 16.0f, 20.0f},
         m_Theme->workbench.templateScroll.roll);
+
+    constexpr std::array<std::string_view, 5> placeholderLines{
+        "// placeholder",
+        "struct Node_T {",
+        "    int val;",
+        "    Node_T* next;",
+        "};",
+    };
+    constexpr float textX = scroll.x + 28.0f;
+    constexpr float textY = scroll.y + 70.0f;
+    constexpr float lineHeight = 42.0f;
+    const Color& textColor = m_Theme->workbench.templateScroll.text;
+    for (std::size_t line = 0; line < placeholderLines.size(); ++line) {
+        m_RobotoMonoPointerTextRenderer->draw(
+            placeholderLines[line],
+            textX,
+            textY + static_cast<float>(line) * lineHeight,
+            textColor.red,
+            textColor.green,
+            textColor.blue,
+            textColor.alpha);
+    }
 }
 
 void Application::drawRubbishBin() const {

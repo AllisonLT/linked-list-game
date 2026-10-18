@@ -55,6 +55,7 @@ struct Theme {
             render::Color shadow;
             render::Color paper;
             render::Color roll;
+            render::Color text;
         };
 
         struct RubbishBin {

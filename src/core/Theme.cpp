@@ -143,6 +143,7 @@ Theme Theme::loadFromFile(const std::filesystem::path& path) {
                     .shadow = colorAt(templateScroll, "shadow", "workbench.templateScroll.shadow"),
                     .paper = colorAt(templateScroll, "paper", "workbench.templateScroll.paper"),
                     .roll = colorAt(templateScroll, "roll", "workbench.templateScroll.roll"),
+                    .text = colorAt(templateScroll, "text", "workbench.templateScroll.text"),
                 },
                 .rubbishBin = {
                     .lid = colorAt(rubbishBin, "lid", "workbench.rubbishBin.lid"),
