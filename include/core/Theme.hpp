@@ -18,7 +18,6 @@ struct Theme {
         render::Color text;
         render::Color hoverGlow;
         render::Color selectedGlow;
-        render::Color selectedFill;
         render::Color tapeSourceGlow;
         render::Color tapeTargetGlow;
         std::vector<render::Color> palette;

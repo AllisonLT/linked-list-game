@@ -160,7 +160,12 @@ void testEnumeratesDownstreamNodes() {
 void testNodeViewStateIsSeparateFromListData() {
     game::model::SinglyLinkedList<int> list;
     const auto node = list.emplaceNode(42);
-    game::view::NodeViewState viewState{.id = node, .x = 100.0f, .y = 200.0f};
+    game::view::NodeViewState viewState{
+        .id = node,
+        .x = 100.0f,
+        .y = 200.0f,
+        .paletteIndex = 3,
+    };
 
     viewState.x = 350.0f;
     viewState.y = 475.0f;
@@ -168,6 +173,7 @@ void testNodeViewStateIsSeparateFromListData() {
     require(list.node(viewState.id).value == 42, "moving a card does not change its node value");
     require(list.node(viewState.id).id == node, "view state retains the node identity");
     require(viewState.x == 350.0f && viewState.y == 475.0f, "view state stores card position");
+    require(viewState.paletteIndex == 3, "view state retains a fixed palette assignment");
 }
 
 void testCardHitTesting() {
@@ -313,7 +319,12 @@ void testLoadsThemeFromJson() {
             theme.nodeCard.defaultFill.green == 0.10f &&
             theme.nodeCard.defaultFill.blue == 0.15f,
         "theme loads node card color");
-    require(theme.nodeCard.palette.empty(), "theme preserves an empty node palette");
+    require(theme.nodeCard.palette.size() == 4, "theme loads all four node palette colors");
+    require(
+        theme.nodeCard.palette.at(2).red == 0.75f &&
+            theme.nodeCard.palette.at(2).green == 0.52f &&
+            theme.nodeCard.palette.at(2).blue == 0.99f,
+        "theme preserves palette color order");
 }
 
 } // namespace

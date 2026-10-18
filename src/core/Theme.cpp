@@ -102,7 +102,6 @@ Theme Theme::loadFromFile(const std::filesystem::path& path) {
                 .text = colorAt(nodeCard, "text", "nodeCard.text"),
                 .hoverGlow = colorAt(nodeCard, "hoverGlow", "nodeCard.hoverGlow"),
                 .selectedGlow = colorAt(nodeCard, "selectedGlow", "nodeCard.selectedGlow"),
-                .selectedFill = colorAt(nodeCard, "selectedFill", "nodeCard.selectedFill"),
                 .tapeSourceGlow = colorAt(nodeCard, "tapeSourceGlow", "nodeCard.tapeSourceGlow"),
                 .tapeTargetGlow = colorAt(nodeCard, "tapeTargetGlow", "nodeCard.tapeTargetGlow"),
             },

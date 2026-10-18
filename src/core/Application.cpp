@@ -106,9 +106,9 @@ Application::Application() {
     m_CorrectExample.list.setNext(correctA, correctB);
     m_CorrectExample.list.setNext(correctB, correctC);
     m_CorrectExample.nodes = {
-        {.id = correctA, .x = SOURCE_NODE_X, .y = CORRECT_NODE_Y},
-        {.id = correctB, .x = MIDDLE_NODE_X, .y = CORRECT_NODE_Y},
-        {.id = correctC, .x = DESTINATION_NODE_X, .y = CORRECT_NODE_Y},
+        {.id = correctA, .x = SOURCE_NODE_X, .y = CORRECT_NODE_Y, .paletteIndex = 0},
+        {.id = correctB, .x = MIDDLE_NODE_X, .y = CORRECT_NODE_Y, .paletteIndex = 1},
+        {.id = correctC, .x = DESTINATION_NODE_X, .y = CORRECT_NODE_Y, .paletteIndex = 2},
     };
 
     if (!m_CorrectExample.list.isConsistent()) {
@@ -746,8 +746,10 @@ void Application::drawNodeCard(
                                    ? tapeTargetOutlineWidth
                                    : (selected ? selectedOutlineWidth
                                                : (hovered ? hoverOutlineWidth : 0.0f));
-    const Color& cardColor =
-        selected ? m_Theme->nodeCard.selectedFill : m_Theme->nodeCard.defaultFill;
+    const std::vector<Color>& palette = m_Theme->nodeCard.palette;
+    const Color& cardColor = palette.empty()
+                                 ? m_Theme->nodeCard.defaultFill
+                                 : palette[node.paletteIndex % palette.size()];
 
     if (tapeSource) {
         drawCircle(
