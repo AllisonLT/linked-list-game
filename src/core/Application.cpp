@@ -242,6 +242,11 @@ void Application::updateInteraction() {
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)
             ? advanceToolAt(mouse.x, mouse.y)
             : std::nullopt;
+    const std::optional<ClampTarget> clickedEmptyClampSlot =
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+                m_HeldTool == HeldTool::None
+            ? emptyClampSlotAt(mouse.x, mouse.y)
+            : std::nullopt;
     const bool nodeHasInputPriority =
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::None &&
@@ -264,6 +269,10 @@ void Application::updateInteraction() {
         }
         m_DragState.reset();
         m_TapeDrag.reset();
+    } else if (clickedEmptyClampSlot && !nodeHasInputPriority) {
+        spawnNodeAtClamp(*clickedEmptyClampSlot);
+        m_SelectedNode.reset();
+        m_DragState.reset();
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::Scissors) {
@@ -464,8 +473,8 @@ void Application::drawWorkbench() const {
         theme.workbench.title.alpha);
     drawAdvanceTool(CURR_ADVANCE_TOOL_SLOT, "curr", m_CurrAdvanceFeedback);
     drawAdvanceTool(TEMP_ADVANCE_TOOL_SLOT, "temp", m_TempAdvanceFeedback);
-    drawClampSlot(CURR_CLAMP_SLOT);
-    drawClampSlot(TEMP_CLAMP_SLOT);
+    drawClampSlot(CURR_CLAMP_SLOT, m_CurrNode.has_value());
+    drawClampSlot(TEMP_CLAMP_SLOT, m_TempNode.has_value());
     drawTemplateScroll();
     drawToolbox();
     drawRubbishBin();
@@ -569,7 +578,7 @@ void Application::drawAdvanceTool(
         toolbox.inactiveLabel.alpha);
 }
 
-void Application::drawClampSlot(const render::Rectangle& slot) const {
+void Application::drawClampSlot(const render::Rectangle& slot, bool isOccupied) const {
     if (m_DragState && m_HeldTool == HeldTool::None) {
         const view::NodeViewState& draggedNode = findNodeVisual(
             m_DragState->node.example->nodes,
@@ -602,6 +611,28 @@ void Application::drawClampSlot(const render::Rectangle& slot) const {
         drawRectangle({slot.x, y, dashWidth, height}, m_Theme->workbench.clamp.slotOutline);
         drawRectangle(
             {right - dashWidth, y, dashWidth, height},
+            m_Theme->workbench.clamp.slotOutline);
+    }
+    if (!isOccupied) {
+        constexpr float plusLength = 44.0f;
+        constexpr float plusWidth = 6.0f;
+        const float centerX = slot.x + (slot.width / 2.0f);
+        const float centerY = slot.y + (slot.height / 2.0f);
+        drawRectangle(
+            {
+                centerX - (plusLength / 2.0f),
+                centerY - (plusWidth / 2.0f),
+                plusLength,
+                plusWidth,
+            },
+            m_Theme->workbench.clamp.slotOutline);
+        drawRectangle(
+            {
+                centerX - (plusWidth / 2.0f),
+                centerY - (plusLength / 2.0f),
+                plusWidth,
+                plusLength,
+            },
             m_Theme->workbench.clamp.slotOutline);
     }
 }
@@ -1342,6 +1373,16 @@ std::optional<Application::ClampTarget> Application::advanceToolAt(float x, floa
     return std::nullopt;
 }
 
+std::optional<Application::ClampTarget> Application::emptyClampSlotAt(float x, float y) const {
+    if (!m_CurrNode && isPointInsideRectangle(CURR_CLAMP_SLOT, x, y)) {
+        return ClampTarget::Curr;
+    }
+    if (!m_TempNode && isPointInsideRectangle(TEMP_CLAMP_SLOT, x, y)) {
+        return ClampTarget::Temp;
+    }
+    return std::nullopt;
+}
+
 bool Application::isKeyTargetHovered() const {
     if (m_HeldTool != HeldTool::Key || !Input::isMouseInsideCanvas()) {
         return false;
@@ -1472,6 +1513,38 @@ void Application::attachDraggedNodeToClamp(
         visual.y += snapDeltaY;
     }
     attachedNode = m_DragState->node;
+}
+
+void Application::spawnNodeAtClamp(ClampTarget target) {
+    const render::Rectangle& slot =
+        target == ClampTarget::Curr ? CURR_CLAMP_SLOT : TEMP_CLAMP_SLOT;
+    std::optional<NodeReference>& attachedNode =
+        target == ClampTarget::Curr ? m_CurrNode : m_TempNode;
+    if (attachedNode) {
+        throw std::logic_error("Cannot spawn a node into an occupied clamp");
+    }
+
+    std::uniform_int_distribution<int> letterDistribution('A', 'Z');
+    std::size_t paletteIndex = 0;
+    if (!m_Theme->nodeCard.palette.empty()) {
+        std::uniform_int_distribution<std::size_t> paletteDistribution(
+            0,
+            m_Theme->nodeCard.palette.size() - 1);
+        paletteIndex = paletteDistribution(m_RandomEngine);
+    }
+
+    const model::NodeId id = m_CorrectExample.list.emplaceNode(
+        std::string(1, static_cast<char>(letterDistribution(m_RandomEngine))));
+    m_CorrectExample.nodes.push_back(
+        {
+            .id = id,
+            .x = slot.x,
+            .y = slot.y,
+            .paletteIndex = paletteIndex,
+        });
+    const NodeReference node{.example = &m_CorrectExample, .id = id};
+    m_DrawOrder.push_back(node);
+    attachedNode = node;
 }
 
 render::Rectangle Application::randomClampEjectionPosition(const render::Rectangle& slot) {

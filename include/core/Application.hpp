@@ -89,7 +89,7 @@ private:
         const render::Rectangle& slot,
         const char* clampLabel,
         AdvanceFeedback feedback) const;
-    void drawClampSlot(const render::Rectangle& slot) const;
+    void drawClampSlot(const render::Rectangle& slot, bool isOccupied) const;
     void drawDashedNodeSilhouette(
         const render::NodeLayout& layout,
         const Color& color) const;
@@ -134,10 +134,12 @@ private:
     void attachDraggedNodeToClamp(
         std::optional<NodeReference>& attachedNode,
         const render::Rectangle& slot);
+    void spawnNodeAtClamp(ClampTarget target);
     [[nodiscard]] render::Rectangle randomClampEjectionPosition(
         const render::Rectangle& slot);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] std::optional<ClampTarget> advanceToolAt(float x, float y) const;
+    [[nodiscard]] std::optional<ClampTarget> emptyClampSlotAt(float x, float y) const;
     [[nodiscard]] bool isKeyTargetHovered() const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
