@@ -29,6 +29,12 @@ constexpr render::Rectangle HINT_DRAWER_HANDLE{
     90.0f,
     10.0f,
 };
+constexpr render::Rectangle HINT_DRAWER_KEY_TARGET{
+    HINT_DRAWER_HANDLE.x - 6.0f,
+    HINT_DRAWER_HANDLE.y - 6.0f,
+    HINT_DRAWER_HANDLE.width + 12.0f,
+    HINT_DRAWER_HANDLE.height + 12.0f,
+};
 constexpr float TOOLBOX_WIDTH = 255.0f;
 constexpr float TOOLBOX_HEIGHT = 488.0f;
 constexpr float TOOLBOX_X = WORKBENCH_X + WORKBENCH_WIDTH - TOOLBOX_WIDTH - 50.0f;
@@ -746,12 +752,7 @@ void Application::drawDrawers() const {
         m_Theme->workbench.drawers.handle);
     if (isKeyTargetHovered()) {
         drawRectangle(
-            {
-                HINT_DRAWER_HANDLE.x - 6.0f,
-                HINT_DRAWER_HANDLE.y - 6.0f,
-                HINT_DRAWER_HANDLE.width + 12.0f,
-                HINT_DRAWER_HANDLE.height + 12.0f,
-            },
+            HINT_DRAWER_KEY_TARGET,
             m_Theme->workbench.toolbox.selected);
     }
     drawRectangle(
@@ -1299,7 +1300,7 @@ bool Application::isKeyTargetHovered() const {
     }
 
     const glm::vec2 mouse = Input::getMousePosition();
-    return isPointInsideRectangle(HINT_DRAWER_HANDLE, mouse.x, mouse.y);
+    return isPointInsideRectangle(HINT_DRAWER_KEY_TARGET, mouse.x, mouse.y);
 }
 
 std::optional<Application::NodeReference> Application::findScissorsTarget(float x, float y) const {
