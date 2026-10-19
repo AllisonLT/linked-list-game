@@ -242,11 +242,15 @@ void Application::updateInteraction() {
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)
             ? advanceToolAt(mouse.x, mouse.y)
             : std::nullopt;
-    if (clickedTool) {
+    const bool nodeHasInputPriority =
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        m_HeldTool == HeldTool::None &&
+        findTopmostCard(mouse.x, mouse.y).has_value();
+    if (clickedTool && !nodeHasInputPriority) {
         m_HeldTool = m_HeldTool == *clickedTool ? HeldTool::None : *clickedTool;
         m_DragState.reset();
         m_TapeDrag.reset();
-    } else if (clickedAdvance) {
+    } else if (clickedAdvance && !nodeHasInputPriority) {
         if (*clickedAdvance == ClampTarget::Curr) {
             triggerAdvance(
                 m_CurrNode,
