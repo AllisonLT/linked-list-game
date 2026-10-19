@@ -499,7 +499,7 @@ void Application::drawToolbox() const {
             TOOL_ICON_SIZE,
             TOOL_ICON_SIZE);
         m_RobotoMonoPointerTextRenderer->draw(
-            "TAPE",
+            "ASSIGN",
             TAPE_TOOL_SLOT.x + 74.0f,
             TOOL_BUTTON_Y + 44.0f,
             toolbox.inactiveLabel.red,
@@ -514,7 +514,7 @@ void Application::drawToolbox() const {
             TOOL_ICON_SIZE,
             TOOL_ICON_SIZE);
         m_RobotoMonoPointerTextRenderer->draw(
-            "KEY",
+            "HINT",
             KEY_TOOL_SLOT.x + 74.0f,
             KEY_TOOL_SLOT.y + 44.0f,
             toolbox.inactiveLabel.red,
@@ -529,8 +529,8 @@ void Application::drawToolbox() const {
             TOOL_ICON_SIZE,
             TOOL_ICON_SIZE);
         m_RobotoMonoPointerTextRenderer->draw(
-            "SCISSORS",
-            SCISSORS_TOOL_SLOT.x + 74.0f,
+            "TO nullptr",
+            SCISSORS_TOOL_SLOT.x + 65.0f,
             TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
             toolbox.inactiveLabel.red,
             toolbox.inactiveLabel.green,
