@@ -23,6 +23,12 @@ constexpr float WORKBENCH_WIDTH = Window::TARGET_WIDTH - (2.0f * WORKBENCH_X);
 constexpr float WORKBENCH_HEIGHT = (Window::TARGET_HEIGHT * 3.0f) / 5.0f;
 constexpr float DRAWER_Y = WORKBENCH_Y + WORKBENCH_HEIGHT;
 constexpr float DRAWER_HEIGHT = 50.0f;
+constexpr render::Rectangle HINT_DRAWER_HANDLE{
+    1595.0f,
+    DRAWER_Y + 20.0f,
+    90.0f,
+    10.0f,
+};
 constexpr float TOOLBOX_WIDTH = 255.0f;
 constexpr float TOOLBOX_HEIGHT = 488.0f;
 constexpr float TOOLBOX_X = WORKBENCH_X + WORKBENCH_WIDTH - TOOLBOX_WIDTH - 50.0f;
@@ -738,14 +744,21 @@ void Application::drawDrawers() const {
             10.0f,
         },
         m_Theme->workbench.drawers.handle);
+    if (isKeyTargetHovered()) {
+        drawRectangle(
+            {
+                HINT_DRAWER_HANDLE.x - 6.0f,
+                HINT_DRAWER_HANDLE.y - 6.0f,
+                HINT_DRAWER_HANDLE.width + 12.0f,
+                HINT_DRAWER_HANDLE.height + 12.0f,
+            },
+            m_Theme->workbench.toolbox.selected);
+    }
     drawRectangle(
-        {
-            hintDrawer.x + (hintDrawer.width / 2.0f) - 45.0f,
-            hintDrawer.y + 20.0f,
-            90.0f,
-            10.0f,
-        },
-        m_Theme->workbench.drawers.handle);
+        HINT_DRAWER_HANDLE,
+        isKeyTargetHovered()
+            ? m_Theme->workbench.toolbox.selected
+            : m_Theme->workbench.drawers.handle);
     m_RobotoMonoPointerTextRenderer->draw(
         "CODE DRAWER",
         codeDrawer.x + 36.0f,
@@ -1278,6 +1291,15 @@ std::optional<Application::HeldTool> Application::toolAt(float x, float y) const
 
 bool Application::isAdvanceToolAt(float x, float y) const {
     return isPointInsideRectangle(ADVANCE_TOOL_SLOT, x, y);
+}
+
+bool Application::isKeyTargetHovered() const {
+    if (m_HeldTool != HeldTool::Key || !Input::isMouseInsideCanvas()) {
+        return false;
+    }
+
+    const glm::vec2 mouse = Input::getMousePosition();
+    return isPointInsideRectangle(HINT_DRAWER_HANDLE, mouse.x, mouse.y);
 }
 
 std::optional<Application::NodeReference> Application::findScissorsTarget(float x, float y) const {

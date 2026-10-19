@@ -126,6 +126,7 @@ private:
         const render::Rectangle& slot);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
+    [[nodiscard]] bool isKeyTargetHovered() const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeTarget(float x, float y) const;
