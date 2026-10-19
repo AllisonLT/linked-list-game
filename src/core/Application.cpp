@@ -36,7 +36,7 @@ constexpr render::Rectangle HINT_DRAWER_KEY_TARGET{
     HINT_DRAWER_HANDLE.height + 12.0f,
 };
 constexpr float TOOLBOX_WIDTH = 255.0f;
-constexpr float TOOLBOX_HEIGHT = 488.0f;
+constexpr float TOOLBOX_HEIGHT = 405.0f;
 constexpr float TOOLBOX_X = WORKBENCH_X + WORKBENCH_WIDTH - TOOLBOX_WIDTH - 50.0f;
 constexpr float TOOLBOX_Y = WORKBENCH_Y + 120.0f;
 constexpr float TOOL_BUTTON_X = TOOLBOX_X + 34.0f;
@@ -58,7 +58,7 @@ constexpr render::Rectangle CURR_CLAMP_SLOT{
 };
 constexpr render::Rectangle KEY_TOOL_SLOT{
     TOOL_BUTTON_X,
-    TOOL_BUTTON_Y + (3.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
+    TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
     TOOL_BUTTON_WIDTH,
     TOOL_BUTTON_HEIGHT,
 };
@@ -80,11 +80,20 @@ constexpr render::Rectangle SCISSORS_TOOL_SLOT{
     TOOL_BUTTON_WIDTH,
     TOOL_BUTTON_HEIGHT,
 };
-constexpr render::Rectangle ADVANCE_TOOL_SLOT{
-    TOOL_BUTTON_X,
-    TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
-    TOOL_BUTTON_WIDTH,
-    TOOL_BUTTON_HEIGHT,
+constexpr float ADVANCE_TOOL_WIDTH = 156.0f;
+constexpr float ADVANCE_TOOL_HEIGHT = 38.0f;
+constexpr float ADVANCE_TOOL_Y = WORKBENCH_Y + 8.0f;
+constexpr render::Rectangle CURR_ADVANCE_TOOL_SLOT{
+    CURR_CLAMP_CENTER_X - (ADVANCE_TOOL_WIDTH / 2.0f),
+    ADVANCE_TOOL_Y,
+    ADVANCE_TOOL_WIDTH,
+    ADVANCE_TOOL_HEIGHT,
+};
+constexpr render::Rectangle TEMP_ADVANCE_TOOL_SLOT{
+    TEMP_CLAMP_CENTER_X - (ADVANCE_TOOL_WIDTH / 2.0f),
+    ADVANCE_TOOL_Y,
+    ADVANCE_TOOL_WIDTH,
+    ADVANCE_TOOL_HEIGHT,
 };
 constexpr int CIRCLE_SEGMENTS = 24;
 constexpr float PI = 3.14159265358979323846f;
@@ -183,12 +192,18 @@ void Application::processInput() {
 }
 
 void Application::update(float deltaTime) {
-    if (m_AdvanceFeedbackRemaining > 0.0f) {
-        m_AdvanceFeedbackRemaining = std::max(0.0f, m_AdvanceFeedbackRemaining - deltaTime);
-        if (m_AdvanceFeedbackRemaining == 0.0f) {
-            m_AdvanceFeedback = AdvanceFeedback::None;
+    const auto updateAdvanceFeedback = [deltaTime](
+                                           AdvanceFeedback& feedback,
+                                           float& feedbackRemaining) {
+        if (feedbackRemaining > 0.0f) {
+            feedbackRemaining = std::max(0.0f, feedbackRemaining - deltaTime);
+            if (feedbackRemaining == 0.0f) {
+                feedback = AdvanceFeedback::None;
+            }
         }
-    }
+    };
+    updateAdvanceFeedback(m_CurrAdvanceFeedback, m_CurrAdvanceFeedbackRemaining);
+    updateAdvanceFeedback(m_TempAdvanceFeedback, m_TempAdvanceFeedbackRemaining);
 
     const glm::vec2 mouse = Input::getMousePosition();
     std::ostringstream title;
@@ -223,14 +238,26 @@ void Application::updateInteraction() {
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)
             ? toolAt(mouse.x, mouse.y)
             : std::nullopt;
+    const std::optional<ClampTarget> clickedAdvance =
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)
+            ? advanceToolAt(mouse.x, mouse.y)
+            : std::nullopt;
     if (clickedTool) {
         m_HeldTool = m_HeldTool == *clickedTool ? HeldTool::None : *clickedTool;
         m_DragState.reset();
         m_TapeDrag.reset();
-    } else if (
-        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
-        isAdvanceToolAt(mouse.x, mouse.y)) {
-        triggerAdvanceFeedback();
+    } else if (clickedAdvance) {
+        if (*clickedAdvance == ClampTarget::Curr) {
+            triggerAdvance(
+                m_CurrNode,
+                m_CurrAdvanceFeedback,
+                m_CurrAdvanceFeedbackRemaining);
+        } else {
+            triggerAdvance(
+                m_TempNode,
+                m_TempAdvanceFeedback,
+                m_TempAdvanceFeedbackRemaining);
+        }
         m_DragState.reset();
         m_TapeDrag.reset();
     } else if (
@@ -431,6 +458,8 @@ void Application::drawWorkbench() const {
         theme.workbench.title.green,
         theme.workbench.title.blue,
         theme.workbench.title.alpha);
+    drawAdvanceTool(CURR_ADVANCE_TOOL_SLOT, "curr", m_CurrAdvanceFeedback);
+    drawAdvanceTool(TEMP_ADVANCE_TOOL_SLOT, "temp", m_TempAdvanceFeedback);
     drawClampSlot(CURR_CLAMP_SLOT);
     drawClampSlot(TEMP_CLAMP_SLOT);
     drawTemplateScroll();
@@ -508,27 +537,28 @@ void Application::drawToolbox() const {
             toolbox.inactiveLabel.blue,
             toolbox.inactiveLabel.alpha);
     }
-    if (m_AdvanceFeedback == AdvanceFeedback::Error) {
+}
+
+void Application::drawAdvanceTool(
+    const render::Rectangle& slot,
+    const char* clampLabel,
+    AdvanceFeedback feedback) const {
+    const Theme::Workbench::Toolbox& toolbox = m_Theme->workbench.toolbox;
+    if (feedback == AdvanceFeedback::Error) {
         drawRectangle(
-            {
-                ADVANCE_TOOL_SLOT.x - 6.0f,
-                ADVANCE_TOOL_SLOT.y - 6.0f,
-                ADVANCE_TOOL_SLOT.width + 12.0f,
-                ADVANCE_TOOL_SLOT.height + 12.0f,
-            },
+            {slot.x - 6.0f, slot.y - 6.0f, slot.width + 12.0f, slot.height + 12.0f},
             toolbox.errorGlow);
     }
     drawRectangle(
-        ADVANCE_TOOL_SLOT,
-        m_AdvanceFeedback == AdvanceFeedback::Error
+        slot,
+        feedback == AdvanceFeedback::Error
             ? toolbox.error
-            : (m_AdvanceFeedback == AdvanceFeedback::Activated
-                   ? toolbox.selected
-                   : toolbox.button));
+            : (feedback == AdvanceFeedback::Activated ? toolbox.selected : toolbox.button));
+    const std::string label = std::string("ADVANCE ") + clampLabel;
     m_RobotoMonoPointerTextRenderer->draw(
-        "ADVANCE",
-        TOOL_BUTTON_X + 25.0f,
-        TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)) + 44.0f,
+        label,
+        slot.x + 6.0f,
+        slot.y + 27.0f,
         toolbox.inactiveLabel.red,
         toolbox.inactiveLabel.green,
         toolbox.inactiveLabel.blue,
@@ -814,12 +844,20 @@ void Application::drawTapePreview() const {
         1.0f);
 }
 
-void Application::triggerAdvanceFeedback() {
-    m_AdvanceFeedback = AdvanceFeedback::Activated;
-    if (m_CurrNode && !m_CurrNode->example->list.node(m_CurrNode->id).next) {
-        m_AdvanceFeedback = AdvanceFeedback::Error;
+void Application::triggerAdvance(
+    std::optional<NodeReference>& attachedNode,
+    AdvanceFeedback& feedback,
+    float& feedbackRemaining) {
+    feedback = AdvanceFeedback::Error;
+    if (attachedNode) {
+        const std::optional<model::NodeId> nextNodeId =
+            attachedNode->example->list.node(attachedNode->id).next;
+        if (nextNodeId) {
+            attachedNode = {.example = attachedNode->example, .id = *nextNodeId};
+            feedback = AdvanceFeedback::Activated;
+        }
     }
-    m_AdvanceFeedbackRemaining = ADVANCE_FEEDBACK_DURATION;
+    feedbackRemaining = ADVANCE_FEEDBACK_DURATION;
 }
 
 void Application::drawClamp(
@@ -1290,8 +1328,14 @@ std::optional<Application::HeldTool> Application::toolAt(float x, float y) const
     return std::nullopt;
 }
 
-bool Application::isAdvanceToolAt(float x, float y) const {
-    return isPointInsideRectangle(ADVANCE_TOOL_SLOT, x, y);
+std::optional<Application::ClampTarget> Application::advanceToolAt(float x, float y) const {
+    if (isPointInsideRectangle(CURR_ADVANCE_TOOL_SLOT, x, y)) {
+        return ClampTarget::Curr;
+    }
+    if (isPointInsideRectangle(TEMP_ADVANCE_TOOL_SLOT, x, y)) {
+        return ClampTarget::Temp;
+    }
+    return std::nullopt;
 }
 
 bool Application::isKeyTargetHovered() const {

@@ -40,6 +40,11 @@ private:
         Error,
     };
 
+    enum class ClampTarget {
+        Curr,
+        Temp,
+    };
+
     struct ListExample {
         model::SinglyLinkedList<std::string> list;
         std::vector<view::NodeViewState> nodes;
@@ -80,6 +85,10 @@ private:
     void createRectangleRenderer();
     void drawWorkbench() const;
     void drawToolbox() const;
+    void drawAdvanceTool(
+        const render::Rectangle& slot,
+        const char* clampLabel,
+        AdvanceFeedback feedback) const;
     void drawClampSlot(const render::Rectangle& slot) const;
     void drawDashedNodeSilhouette(
         const render::NodeLayout& layout,
@@ -93,7 +102,10 @@ private:
         const std::optional<NodeReference>& attachedNode) const;
     void drawHeldTool() const;
     void drawTapePreview() const;
-    void triggerAdvanceFeedback();
+    void triggerAdvance(
+        std::optional<NodeReference>& attachedNode,
+        AdvanceFeedback& feedback,
+        float& feedbackRemaining);
     void drawNodeCard(const ListExample& example, const view::NodeViewState& node) const;
     void drawNodeText(const ListExample& example, const view::NodeViewState& node) const;
     void drawExampleConnections(const ListExample& example) const;
@@ -125,7 +137,7 @@ private:
     [[nodiscard]] render::Rectangle randomClampEjectionPosition(
         const render::Rectangle& slot);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
-    [[nodiscard]] bool isAdvanceToolAt(float x, float y) const;
+    [[nodiscard]] std::optional<ClampTarget> advanceToolAt(float x, float y) const;
     [[nodiscard]] bool isKeyTargetHovered() const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
@@ -173,8 +185,10 @@ private:
     std::optional<NodeReference> m_HoveredTapeSource;
     std::optional<NodeReference> m_HoveredTapeTarget;
     HeldTool m_HeldTool = HeldTool::None;
-    AdvanceFeedback m_AdvanceFeedback = AdvanceFeedback::None;
-    float m_AdvanceFeedbackRemaining = 0.0f;
+    AdvanceFeedback m_CurrAdvanceFeedback = AdvanceFeedback::None;
+    AdvanceFeedback m_TempAdvanceFeedback = AdvanceFeedback::None;
+    float m_CurrAdvanceFeedbackRemaining = 0.0f;
+    float m_TempAdvanceFeedbackRemaining = 0.0f;
     std::mt19937 m_RandomEngine{std::random_device{}()};
     unsigned int m_RectangleVertexArray = 0;
     unsigned int m_RectangleVertexBuffer = 0;
