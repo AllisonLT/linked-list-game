@@ -31,6 +31,7 @@ private:
         None,
         Tape,
         Scissors,
+        Key,
     };
 
     enum class AdvanceFeedback {
@@ -157,6 +158,8 @@ private:
     std::unique_ptr<TextureRenderer> m_TapeActiveTexture;
     std::unique_ptr<TextureRenderer> m_ScissorsInactiveTexture;
     std::unique_ptr<TextureRenderer> m_ScissorsActiveTexture;
+    std::unique_ptr<TextureRenderer> m_KeyInactiveTexture;
+    std::unique_ptr<TextureRenderer> m_KeyActiveTexture;
     ListExample m_CorrectExample;
     std::vector<NodeReference> m_DrawOrder;
     std::optional<NodeReference> m_HoveredNode;

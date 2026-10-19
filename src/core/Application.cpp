@@ -24,7 +24,7 @@ constexpr float WORKBENCH_HEIGHT = (Window::TARGET_HEIGHT * 3.0f) / 5.0f;
 constexpr float DRAWER_Y = WORKBENCH_Y + WORKBENCH_HEIGHT;
 constexpr float DRAWER_HEIGHT = 50.0f;
 constexpr float TOOLBOX_WIDTH = 255.0f;
-constexpr float TOOLBOX_HEIGHT = 405.0f;
+constexpr float TOOLBOX_HEIGHT = 488.0f;
 constexpr float TOOLBOX_X = WORKBENCH_X + WORKBENCH_WIDTH - TOOLBOX_WIDTH - 50.0f;
 constexpr float TOOLBOX_Y = WORKBENCH_Y + 120.0f;
 constexpr float TOOL_BUTTON_X = TOOLBOX_X + 34.0f;
@@ -43,6 +43,12 @@ constexpr render::Rectangle CURR_CLAMP_SLOT{
     WORKBENCH_Y + 135.0f,
     CLAMP_SLOT_SIZE,
     CLAMP_SLOT_SIZE,
+};
+constexpr render::Rectangle KEY_TOOL_SLOT{
+    TOOL_BUTTON_X,
+    TOOL_BUTTON_Y + (3.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
+    TOOL_BUTTON_WIDTH,
+    TOOL_BUTTON_HEIGHT,
 };
 constexpr render::Rectangle TEMP_CLAMP_SLOT{
     TEMP_CLAMP_CENTER_X - (CLAMP_SLOT_SIZE / 2.0f),
@@ -116,6 +122,10 @@ Application::Application() {
         "assets/themes/test/tools/scissors_inactive.png");
     m_ScissorsActiveTexture = std::make_unique<TextureRenderer>(
         "assets/themes/test/tools/scissors_active.png");
+    m_KeyInactiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/key_inactive.png");
+    m_KeyActiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/key_active.png");
     const model::NodeId correctA = m_CorrectExample.list.emplaceNode("A");
     const model::NodeId correctB = m_CorrectExample.list.emplaceNode("B");
     const model::NodeId correctC = m_CorrectExample.list.emplaceNode("C");
@@ -440,6 +450,7 @@ void Application::drawToolbox() const {
 
     drawRectangle(TAPE_TOOL_SLOT, toolbox.button);
     drawRectangle(SCISSORS_TOOL_SLOT, toolbox.button);
+    drawRectangle(KEY_TOOL_SLOT, toolbox.button);
     if (m_HeldTool != HeldTool::Tape) {
         m_TapeInactiveTexture->draw(
             TAPE_TOOL_SLOT.x + 6.0f,
@@ -450,6 +461,21 @@ void Application::drawToolbox() const {
             "TAPE",
             TAPE_TOOL_SLOT.x + 74.0f,
             TOOL_BUTTON_Y + 44.0f,
+            toolbox.inactiveLabel.red,
+            toolbox.inactiveLabel.green,
+            toolbox.inactiveLabel.blue,
+            toolbox.inactiveLabel.alpha);
+    }
+    if (m_HeldTool != HeldTool::Key) {
+        m_KeyInactiveTexture->draw(
+            KEY_TOOL_SLOT.x + 6.0f,
+            KEY_TOOL_SLOT.y + 6.0f,
+            TOOL_ICON_SIZE,
+            TOOL_ICON_SIZE);
+        m_RobotoMonoPointerTextRenderer->draw(
+            "KEY",
+            KEY_TOOL_SLOT.x + 74.0f,
+            KEY_TOOL_SLOT.y + 44.0f,
             toolbox.inactiveLabel.red,
             toolbox.inactiveLabel.green,
             toolbox.inactiveLabel.blue,
@@ -745,7 +771,9 @@ void Application::drawHeldTool() const {
 
     const glm::vec2 mouse = Input::getMousePosition();
     const TextureRenderer& activeTexture =
-        m_HeldTool == HeldTool::Tape ? *m_TapeActiveTexture : *m_ScissorsActiveTexture;
+        m_HeldTool == HeldTool::Tape
+            ? *m_TapeActiveTexture
+            : (m_HeldTool == HeldTool::Scissors ? *m_ScissorsActiveTexture : *m_KeyActiveTexture);
     activeTexture.draw(
         mouse.x - (HELD_TOOL_ICON_SIZE / 2.0f),
         mouse.y - (HELD_TOOL_ICON_SIZE / 2.0f),
@@ -1241,6 +1269,9 @@ std::optional<Application::HeldTool> Application::toolAt(float x, float y) const
     }
     if (isPointInsideRectangle(SCISSORS_TOOL_SLOT, x, y)) {
         return HeldTool::Scissors;
+    }
+    if (isPointInsideRectangle(KEY_TOOL_SLOT, x, y)) {
+        return HeldTool::Key;
     }
     return std::nullopt;
 }
