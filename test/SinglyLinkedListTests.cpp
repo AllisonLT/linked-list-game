@@ -1,3 +1,4 @@
+#include "core/SandboxState.hpp"
 #include "core/Theme.hpp"
 #include "render/CardHitTest.hpp"
 #include "render/PointerHitTest.hpp"
@@ -5,7 +6,9 @@
 #include "render/NodeLayout.hpp"
 #include "view/NodeViewState.hpp"
 
+#include <chrono>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -330,6 +333,71 @@ void testLoadsThemeFromJson() {
         "theme loads the clamp drop preview color");
 }
 
+void testPersistsSandboxState() {
+    const game::core::SandboxState initializer =
+        game::core::SandboxStateStore::load("assets/sandbox/initial.json");
+    require(initializer.nodes.size() == 3, "initializer contains three sample nodes");
+    require(
+        initializer.headId == 1 &&
+            initializer.nodes.at(0).value == "A" &&
+            initializer.nodes.at(0).nextId == 2 &&
+            initializer.nodes.at(1).value == "B" &&
+            initializer.nodes.at(1).nextId == 3 &&
+            initializer.nodes.at(2).value == "C" &&
+            !initializer.nodes.at(2).nextId,
+        "initializer defines the A to B to C sample");
+
+    const std::filesystem::path savePath =
+        std::filesystem::temp_directory_path() /
+        ("linked-list-game-sandbox-" +
+         std::to_string(
+             std::chrono::steady_clock::now().time_since_epoch().count()) +
+         ".json");
+    const game::core::SandboxState expected{
+        .nodes = {
+            {
+                .id = 4,
+                .value = "X",
+                .nextId = 9,
+                .x = 120.0f,
+                .y = 340.0f,
+                .paletteIndex = 2,
+            },
+            {
+                .id = 9,
+                .value = "Y",
+                .nextId = std::nullopt,
+                .x = 560.0f,
+                .y = 780.0f,
+                .paletteIndex = 1,
+            },
+        },
+        .headId = 4,
+        .currId = 9,
+        .tempId = 4,
+    };
+    game::core::SandboxStateStore::save(savePath, expected);
+    const game::core::SandboxState loaded = game::core::SandboxStateStore::load(savePath);
+    std::filesystem::remove(savePath);
+
+    require(
+        loaded.headId == expected.headId &&
+            loaded.currId == expected.currId &&
+            loaded.tempId == expected.tempId,
+        "sandbox persistence retains head and clamp references");
+    require(
+        loaded.nodes.size() == expected.nodes.size() &&
+            loaded.nodes.at(0).id == expected.nodes.at(0).id &&
+            loaded.nodes.at(0).nextId == expected.nodes.at(0).nextId &&
+            loaded.nodes.at(0).x == expected.nodes.at(0).x &&
+            loaded.nodes.at(0).y == expected.nodes.at(0).y &&
+            loaded.nodes.at(0).paletteIndex == expected.nodes.at(0).paletteIndex &&
+            loaded.nodes.at(1).id == expected.nodes.at(1).id &&
+            loaded.nodes.at(1).value == expected.nodes.at(1).value &&
+            !loaded.nodes.at(1).nextId,
+        "sandbox persistence retains node model and view state");
+}
+
 } // namespace
 
 int main() {
@@ -347,4 +415,5 @@ int main() {
     testDefinesNodeLayout();
     testClampsCardCenterToCanvas();
     testLoadsThemeFromJson();
+    testPersistsSandboxState();
 }

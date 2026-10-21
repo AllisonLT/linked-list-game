@@ -3,20 +3,18 @@
 #include "render/PointerHitTest.hpp"
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace game::core {
 namespace {
 
-constexpr float SOURCE_NODE_X = 500.0f;
-constexpr float MIDDLE_NODE_X = 830.0f;
-constexpr float DESTINATION_NODE_X = 1160.0f;
-constexpr float CORRECT_NODE_Y = 760.0f;
 constexpr float WORKBENCH_X = 60.0f;
 constexpr float WORKBENCH_Y = 50.0f;
 constexpr float WORKBENCH_WIDTH = Window::TARGET_WIDTH - (2.0f * WORKBENCH_X);
@@ -34,6 +32,14 @@ constexpr render::Rectangle HINT_DRAWER_KEY_TARGET{
     HINT_DRAWER_HANDLE.y - 6.0f,
     HINT_DRAWER_HANDLE.width + 12.0f,
     HINT_DRAWER_HANDLE.height + 12.0f,
+};
+const std::filesystem::path INITIAL_SANDBOX_PATH{"assets/sandbox/initial.json"};
+const std::filesystem::path SANDBOX_SAVE_PATH{"saves/sandbox.json"};
+constexpr render::Rectangle INIT_BUTTON{
+    WORKBENCH_X + 320.0f,
+    WORKBENCH_Y + 8.0f,
+    82.0f,
+    34.0f,
 };
 constexpr float TOOLBOX_WIDTH = 255.0f;
 constexpr float TOOLBOX_HEIGHT = 405.0f;
@@ -147,23 +153,14 @@ Application::Application() {
         "assets/themes/test/tools/key_inactive.png");
     m_KeyActiveTexture = std::make_unique<TextureRenderer>(
         "assets/themes/test/tools/key_active.png");
-    const model::NodeId correctA = m_CorrectExample.list.emplaceNode("A");
-    const model::NodeId correctB = m_CorrectExample.list.emplaceNode("B");
-    const model::NodeId correctC = m_CorrectExample.list.emplaceNode("C");
-    m_CorrectExample.list.setHead(correctA);
-    m_CorrectExample.list.setNext(correctA, correctB);
-    m_CorrectExample.list.setNext(correctB, correctC);
-    m_CorrectExample.nodes = {
-        {.id = correctA, .x = SOURCE_NODE_X, .y = CORRECT_NODE_Y, .paletteIndex = 0},
-        {.id = correctB, .x = MIDDLE_NODE_X, .y = CORRECT_NODE_Y, .paletteIndex = 1},
-        {.id = correctC, .x = DESTINATION_NODE_X, .y = CORRECT_NODE_Y, .paletteIndex = 2},
-    };
-
-    if (!m_CorrectExample.list.isConsistent()) {
-        throw std::logic_error("A fixed linked-list example is inconsistent");
+    std::error_code error;
+    const bool hasSave = std::filesystem::exists(SANDBOX_SAVE_PATH, error);
+    if (error) {
+        throw std::runtime_error("Failed to inspect sandbox save state: " + error.message());
     }
-    for (const view::NodeViewState& node : m_CorrectExample.nodes) {
-        m_DrawOrder.push_back({.example = &m_CorrectExample, .id = node.id});
+    loadSandbox(hasSave ? SANDBOX_SAVE_PATH : INITIAL_SANDBOX_PATH);
+    if (!hasSave) {
+        saveSandbox();
     }
     createRectangleRenderer();
 }
@@ -247,6 +244,9 @@ void Application::updateInteraction() {
                 m_HeldTool == HeldTool::None
             ? emptyClampSlotAt(mouse.x, mouse.y)
             : std::nullopt;
+    const bool clickedInit =
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        isInitButtonAt(mouse.x, mouse.y);
     const bool nodeHasInputPriority =
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::None &&
@@ -273,12 +273,15 @@ void Application::updateInteraction() {
         spawnNodeAtClamp(*clickedEmptyClampSlot);
         m_SelectedNode.reset();
         m_DragState.reset();
+    } else if (clickedInit && !nodeHasInputPriority) {
+        resetSandbox();
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::Scissors) {
         if (const std::optional<NodeReference> scissorsTarget =
                 findScissorsTarget(mouse.x, mouse.y)) {
             scissorsTarget->example->list.setNext(scissorsTarget->id, std::nullopt);
+            saveSandbox();
         }
     } else if (m_HeldTool == HeldTool::Tape) {
         if (Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT)) {
@@ -291,6 +294,7 @@ void Application::updateInteraction() {
             } else if (m_TapeDrag) {
                 if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
                     m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
+                    saveSandbox();
                 }
                 m_TapeDrag.reset();
             } else {
@@ -309,6 +313,7 @@ void Application::updateInteraction() {
             Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
             if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
                 m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
+                saveSandbox();
             }
             m_TapeDrag.reset();
         }
@@ -385,6 +390,7 @@ void Application::updateInteraction() {
                 attachDraggedNodeToClamp(m_TempNode, TEMP_CLAMP_SLOT);
             }
             m_DragState.reset();
+            saveSandbox();
         }
     }
 
@@ -471,6 +477,15 @@ void Application::drawWorkbench() const {
         theme.workbench.title.green,
         theme.workbench.title.blue,
         theme.workbench.title.alpha);
+    drawRectangle(INIT_BUTTON, theme.workbench.toolbox.button);
+    m_RobotoMonoPointerTextRenderer->draw(
+        "INIT",
+        INIT_BUTTON.x + 17.0f,
+        INIT_BUTTON.y + 25.0f,
+        theme.workbench.toolbox.inactiveLabel.red,
+        theme.workbench.toolbox.inactiveLabel.green,
+        theme.workbench.toolbox.inactiveLabel.blue,
+        theme.workbench.toolbox.inactiveLabel.alpha);
     drawAdvanceTool(CURR_ADVANCE_TOOL_SLOT, "curr", m_CurrAdvanceFeedback);
     drawAdvanceTool(TEMP_ADVANCE_TOOL_SLOT, "temp", m_TempAdvanceFeedback);
     drawClampSlot(CURR_CLAMP_SLOT, m_CurrNode.has_value());
@@ -890,6 +905,7 @@ void Application::triggerAdvance(
         if (nextNodeId) {
             attachedNode = {.example = attachedNode->example, .id = *nextNodeId};
             feedback = AdvanceFeedback::Activated;
+            saveSandbox();
         }
     }
     feedbackRemaining = ADVANCE_FEEDBACK_DURATION;
@@ -1383,6 +1399,10 @@ std::optional<Application::ClampTarget> Application::emptyClampSlotAt(float x, f
     return std::nullopt;
 }
 
+bool Application::isInitButtonAt(float x, float y) const {
+    return isPointInsideRectangle(INIT_BUTTON, x, y);
+}
+
 bool Application::isKeyTargetHovered() const {
     if (m_HeldTool != HeldTool::Key || !Input::isMouseInsideCanvas()) {
         return false;
@@ -1545,6 +1565,7 @@ void Application::spawnNodeAtClamp(ClampTarget target) {
     const NodeReference node{.example = &m_CorrectExample, .id = id};
     m_DrawOrder.push_back(node);
     attachedNode = node;
+    saveSandbox();
 }
 
 render::Rectangle Application::randomClampEjectionPosition(const render::Rectangle& slot) {
@@ -1634,6 +1655,117 @@ const view::NodeViewState& Application::findNodeVisual(
         }
     }
     throw std::logic_error("Missing layout for linked-list node");
+}
+
+void Application::loadSandbox(const std::filesystem::path& path) {
+    applySandboxState(SandboxStateStore::load(path));
+}
+
+void Application::resetSandbox() {
+    loadSandbox(INITIAL_SANDBOX_PATH);
+    saveSandbox();
+}
+
+void Application::saveSandbox() const {
+    SandboxStateStore::save(SANDBOX_SAVE_PATH, sandboxState());
+}
+
+void Application::applySandboxState(const SandboxState& state) {
+    m_CorrectExample = {};
+    m_DrawOrder.clear();
+    m_HoveredNode.reset();
+    m_SelectedNode.reset();
+    m_CurrNode.reset();
+    m_TempNode.reset();
+    m_DragState.reset();
+    m_HoveredScissorsTarget.reset();
+    m_TapeDrag.reset();
+    m_HoveredTapeSource.reset();
+    m_HoveredTapeTarget.reset();
+    m_HeldTool = HeldTool::None;
+    m_CurrAdvanceFeedback = AdvanceFeedback::None;
+    m_TempAdvanceFeedback = AdvanceFeedback::None;
+    m_CurrAdvanceFeedbackRemaining = 0.0f;
+    m_TempAdvanceFeedbackRemaining = 0.0f;
+
+    std::unordered_map<std::uint32_t, model::NodeId> nodeIds;
+    nodeIds.reserve(state.nodes.size());
+    for (const SandboxNodeState& nodeState : state.nodes) {
+        const model::NodeId id = m_CorrectExample.list.emplaceNode(nodeState.value);
+        nodeIds.emplace(nodeState.id, id);
+        m_CorrectExample.nodes.push_back(
+            {
+                .id = id,
+                .x = nodeState.x,
+                .y = nodeState.y,
+                .paletteIndex = nodeState.paletteIndex,
+            });
+        m_DrawOrder.push_back({.example = &m_CorrectExample, .id = id});
+    }
+
+    const auto resolveId = [&nodeIds](std::uint32_t persistedId) {
+        const auto iterator = nodeIds.find(persistedId);
+        if (iterator == nodeIds.end()) {
+            throw std::logic_error("Sandbox state references a missing node");
+        }
+        return iterator->second;
+    };
+    for (const SandboxNodeState& nodeState : state.nodes) {
+        if (nodeState.nextId) {
+            m_CorrectExample.list.setNext(resolveId(nodeState.id), resolveId(*nodeState.nextId));
+        }
+    }
+    if (state.headId) {
+        m_CorrectExample.list.setHead(resolveId(*state.headId));
+    }
+    const auto makeReference = [this, &resolveId](std::optional<std::uint32_t> persistedId)
+        -> std::optional<NodeReference> {
+        if (!persistedId) {
+            return std::nullopt;
+        }
+        return NodeReference{.example = &m_CorrectExample, .id = resolveId(*persistedId)};
+    };
+    m_CurrNode = makeReference(state.currId);
+    m_TempNode = makeReference(state.tempId);
+
+    if (!m_CorrectExample.list.isConsistent()) {
+        throw std::logic_error("Loaded sandbox state is inconsistent");
+    }
+}
+
+SandboxState Application::sandboxState() const {
+    SandboxState state{
+        .headId = m_CorrectExample.list.head()
+                      ? std::optional<std::uint32_t>{m_CorrectExample.list.head()->value}
+                      : std::nullopt,
+    };
+    state.nodes.reserve(m_CorrectExample.nodes.size());
+    for (const view::NodeViewState& visual : m_CorrectExample.nodes) {
+        const model::SinglyLinkedList<std::string>::Node& node =
+            m_CorrectExample.list.node(visual.id);
+        state.nodes.push_back(
+            {
+                .id = node.id.value,
+                .value = node.value,
+                .nextId = node.next ? std::optional<std::uint32_t>{node.next->value} : std::nullopt,
+                .x = visual.x,
+                .y = visual.y,
+                .paletteIndex = visual.paletteIndex,
+            });
+    }
+    const auto persistedReferenceId = [this](const std::optional<NodeReference>& reference)
+        -> std::optional<std::uint32_t> {
+        if (!reference) {
+            return std::nullopt;
+        }
+        if (reference->example != &m_CorrectExample) {
+            throw std::logic_error("Cannot save a reference from an unknown sandbox");
+        }
+        return reference->id.value;
+    };
+    state.currId = persistedReferenceId(m_CurrNode);
+    state.tempId = persistedReferenceId(m_TempNode);
+    return state;
 }
 
 int Application::run() {

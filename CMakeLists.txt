@@ -123,6 +123,7 @@ endif()
 if(BUILD_TESTING)
     add_executable(SinglyLinkedListTests
         test/SinglyLinkedListTests.cpp
+        src/core/SandboxState.cpp
         src/core/Theme.cpp
     )
     target_include_directories(SinglyLinkedListTests PRIVATE include)

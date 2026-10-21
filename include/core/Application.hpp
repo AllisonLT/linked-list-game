@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/ShaderProgram.hpp"
+#include "core/SandboxState.hpp"
 #include "core/TextRenderer.hpp"
 #include "core/Theme.hpp"
 #include "core/TextureRenderer.hpp"
@@ -10,6 +11,7 @@
 #include "render/NodeLayout.hpp"
 #include "view/NodeViewState.hpp"
 #include <memory>
+#include <filesystem>
 #include <optional>
 #include <random>
 #include <string>
@@ -140,6 +142,7 @@ private:
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
     [[nodiscard]] std::optional<ClampTarget> advanceToolAt(float x, float y) const;
     [[nodiscard]] std::optional<ClampTarget> emptyClampSlotAt(float x, float y) const;
+    [[nodiscard]] bool isInitButtonAt(float x, float y) const;
     [[nodiscard]] bool isKeyTargetHovered() const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;
@@ -152,6 +155,11 @@ private:
     void updateHoveredScissorsTarget();
     void updateHoveredTapeSource();
     void updateHoveredTapeTarget();
+    void loadSandbox(const std::filesystem::path& path);
+    void resetSandbox();
+    void saveSandbox() const;
+    void applySandboxState(const SandboxState& state);
+    [[nodiscard]] SandboxState sandboxState() const;
     [[nodiscard]] std::optional<NodeReference> findTopmostCard(float x, float y) const;
     [[nodiscard]] bool isNodeHovered(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isNodeSelected(const ListExample& example, model::NodeId id) const;
