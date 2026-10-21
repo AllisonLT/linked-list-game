@@ -36,8 +36,8 @@ constexpr render::Rectangle HINT_DRAWER_KEY_TARGET{
 const std::filesystem::path INITIAL_SANDBOX_PATH{"assets/sandbox/initial.json"};
 const std::filesystem::path SANDBOX_SAVE_PATH{"saves/sandbox.json"};
 constexpr render::Rectangle INIT_BUTTON{
-    WORKBENCH_X + 320.0f,
-    WORKBENCH_Y + 8.0f,
+    WORKBENCH_X,
+    Window::TARGET_HEIGHT - 58.0f,
     82.0f,
     34.0f,
 };
@@ -477,7 +477,19 @@ void Application::drawWorkbench() const {
         theme.workbench.title.green,
         theme.workbench.title.blue,
         theme.workbench.title.alpha);
-    drawRectangle(INIT_BUTTON, theme.workbench.toolbox.button);
+    if (isInitButtonHovered()) {
+        drawRectangle(
+            {
+                INIT_BUTTON.x - 6.0f,
+                INIT_BUTTON.y - 6.0f,
+                INIT_BUTTON.width + 12.0f,
+                INIT_BUTTON.height + 12.0f,
+            },
+            theme.workbench.toolbox.selected);
+    }
+    drawRectangle(
+        INIT_BUTTON,
+        isInitButtonHovered() ? theme.workbench.toolbox.selected : theme.workbench.toolbox.button);
     m_RobotoMonoPointerTextRenderer->draw(
         "INIT",
         INIT_BUTTON.x + 17.0f,
@@ -1401,6 +1413,15 @@ std::optional<Application::ClampTarget> Application::emptyClampSlotAt(float x, f
 
 bool Application::isInitButtonAt(float x, float y) const {
     return isPointInsideRectangle(INIT_BUTTON, x, y);
+}
+
+bool Application::isInitButtonHovered() const {
+    if (!Input::isMouseInsideCanvas()) {
+        return false;
+    }
+
+    const glm::vec2 mouse = Input::getMousePosition();
+    return isInitButtonAt(mouse.x, mouse.y);
 }
 
 bool Application::isKeyTargetHovered() const {
