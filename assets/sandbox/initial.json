@@ -1,0 +1,33 @@
+{
+  "head": 1,
+  "clamps": {
+    "curr": null,
+    "temp": null
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "value": "A",
+      "next": 2,
+      "x": 500.0,
+      "y": 760.0,
+      "paletteIndex": 0
+    },
+    {
+      "id": 2,
+      "value": "B",
+      "next": 3,
+      "x": 830.0,
+      "y": 760.0,
+      "paletteIndex": 1
+    },
+    {
+      "id": 3,
+      "value": "C",
+      "next": null,
+      "x": 1160.0,
+      "y": 760.0,
+      "paletteIndex": 2
+    }
+  ]
+}
