@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="activeClipSteel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#e2e8f0" />
+      <stop offset="65%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+
+  <!-- Angled to point toward the card shoulder -->
+  <g transform="rotate(-35 64 64)">
+    <!-- Outer Dark Contour -->
+    <path d="
+      M 46 84
+      V 42
+      A 18 18 0 0 1 82 42
+      V 92
+      A 13 13 0 0 1 56 92
+      V 52
+      A 8 8 0 0 1 72 52
+      V 80" fill="none" stroke="#1e293b" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Chrome Body -->
+    <path d="
+      M 46 84
+      V 42
+      A 18 18 0 0 1 82 42
+      V 92
+      A 13 13 0 0 1 56 92
+      V 52
+      A 8 8 0 0 1 72 52
+      V 80" fill="none" stroke="url(#activeClipSteel)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Sharp Specular Highlight -->
+    <path d="
+      M 46 80
+      V 42
+      A 18 18 0 0 1 80 32
+      M 82 50
+      V 90
+      A 13 13 0 0 1 58 98
+      M 56 80
+      V 52
+      A 8 8 0 0 1 70 48" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" opacity="0.95" />
+  </g>
+</svg>

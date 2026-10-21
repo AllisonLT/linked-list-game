@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Polished steel/chrome cylinder gradient -->
+    <linearGradient id="clipSteel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="35%" stop-color="#e2e8f0" />
+      <stop offset="70%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+  </defs>
+
+  <g>
+    <!-- Outer Dark Contour (gives wire weight & depth) -->
+    <path d="
+      M 46 84
+      V 42
+      A 18 18 0 0 1 82 42
+      V 92
+      A 13 13 0 0 1 56 92
+      V 52
+      A 8 8 0 0 1 72 52
+      V 80" fill="none" stroke="#334155" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Main Chrome Wire Body -->
+    <path d="
+      M 46 84
+      V 42
+      A 18 18 0 0 1 82 42
+      V 92
+      A 13 13 0 0 1 56 92
+      V 52
+      A 8 8 0 0 1 72 52
+      V 80" fill="none" stroke="url(#clipSteel)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Inner Specular Light Core -->
+    <path d="
+      M 46 80
+      V 42
+      A 18 18 0 0 1 80 32
+      M 82 50
+      V 90
+      A 13 13 0 0 1 58 98
+      M 56 80
+      V 52
+      A 8 8 0 0 1 70 48" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.9" />
+  </g>
+</svg>
