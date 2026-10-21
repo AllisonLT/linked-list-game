@@ -151,8 +151,9 @@ private:
     void spawnNodeAtClamp(ClampTarget target);
     void toggleDeck(const NodeReference& lead);
     void expandDeck(std::size_t index);
-    void expandAllDecks();
+    void expandDeckContaining(const NodeReference& node);
     void applyDeckLayout(const DeckState& deck);
+    void updateDeckOriginalPositions(const DragState& dragState);
     [[nodiscard]] render::Rectangle randomClampEjectionPosition(
         const render::Rectangle& slot);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;

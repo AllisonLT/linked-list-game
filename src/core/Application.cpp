@@ -303,7 +303,7 @@ void Application::updateInteraction() {
         m_HeldTool == HeldTool::Scissors) {
         if (const std::optional<NodeReference> scissorsTarget =
                 findScissorsTarget(mouse.x, mouse.y)) {
-            expandAllDecks();
+            expandDeckContaining(*scissorsTarget);
             scissorsTarget->example->list.setNext(scissorsTarget->id, std::nullopt);
             saveSandbox();
         }
@@ -317,7 +317,8 @@ void Application::updateInteraction() {
                 };
             } else if (m_TapeDrag) {
                 if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
-                    expandAllDecks();
+                    expandDeckContaining(m_TapeDrag->source);
+                    expandDeckContaining(*target);
                     m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
                     saveSandbox();
                 }
@@ -337,7 +338,8 @@ void Application::updateInteraction() {
             m_TapeDrag && m_TapeDrag->isDragging &&
             Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
             if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
-                expandAllDecks();
+                expandDeckContaining(m_TapeDrag->source);
+                expandDeckContaining(*target);
                 m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
                 saveSandbox();
             }
@@ -354,10 +356,6 @@ void Application::updateInteraction() {
         m_HeldTool == HeldTool::None) {
         const std::optional<NodeReference> hitNode = findTopmostCard(mouse.x, mouse.y);
         if (hitNode) {
-            if (const std::optional<std::size_t> deckIndex = deckIndexContaining(*hitNode)) {
-                expandDeck(*deckIndex);
-                saveSandbox();
-            }
             bringToFront(*hitNode);
             m_SelectedNode = *hitNode;
             view::NodeViewState& node = findNodeVisual(hitNode->example->nodes, hitNode->id);
@@ -425,6 +423,7 @@ void Application::updateInteraction() {
             } else if (isPointInsideRectangle(TEMP_CLAMP_SLOT, centerX, centerY)) {
                 attachDraggedNodeToClamp(m_TempNode, TEMP_CLAMP_SLOT);
             }
+            updateDeckOriginalPositions(*m_DragState);
             m_DragState.reset();
             saveSandbox();
         }
@@ -1729,9 +1728,9 @@ void Application::expandDeck(std::size_t index) {
     m_Decks.erase(m_Decks.begin() + static_cast<std::ptrdiff_t>(index));
 }
 
-void Application::expandAllDecks() {
-    while (!m_Decks.empty()) {
-        expandDeck(m_Decks.size() - 1);
+void Application::expandDeckContaining(const NodeReference& node) {
+    if (const std::optional<std::size_t> index = deckIndexContaining(node)) {
+        expandDeck(*index);
     }
 }
 
@@ -1743,6 +1742,34 @@ void Application::applyDeckLayout(const DeckState& deck) {
         const float offset = DECK_OFFSET_STEP * static_cast<float>(index + 1);
         visual.x = leadVisual.x + offset;
         visual.y = leadVisual.y - offset;
+    }
+}
+
+void Application::updateDeckOriginalPositions(const DragState& dragState) {
+    const auto initialPositionFor = [&dragState](model::NodeId id)
+        -> std::optional<glm::vec2> {
+        if (dragState.node.id == id) {
+            return glm::vec2{dragState.initialX, dragState.initialY};
+        }
+        for (const DraggedNode& downstreamNode : dragState.downstreamNodes) {
+            if (downstreamNode.id == id) {
+                return glm::vec2{downstreamNode.initialX, downstreamNode.initialY};
+            }
+        }
+        return std::nullopt;
+    };
+
+    for (DeckState& deck : m_Decks) {
+        for (DeckMember& member : deck.members) {
+            const std::optional<glm::vec2> initialPosition = initialPositionFor(member.id);
+            if (!initialPosition) {
+                continue;
+            }
+            const view::NodeViewState& visual =
+                findNodeVisual(deck.lead.example->nodes, member.id);
+            member.originalX += visual.x - initialPosition->x;
+            member.originalY += visual.y - initialPosition->y;
+        }
     }
 }
 
@@ -1793,6 +1820,9 @@ void Application::bringToFront(const NodeReference& node) {
 
 std::optional<Application::NodeReference> Application::findTopmostCard(float x, float y) const {
     for (auto iterator = m_DrawOrder.rbegin(); iterator != m_DrawOrder.rend(); ++iterator) {
+        if (isDeckMember(*iterator)) {
+            continue;
+        }
         const view::NodeViewState& node = findNodeVisual(iterator->example->nodes, iterator->id);
         if (render::isPointInsideCard(node, x, y)) {
             return *iterator;
