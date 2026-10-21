@@ -337,6 +337,7 @@ void testPersistsSandboxState() {
     const game::core::SandboxState initializer =
         game::core::SandboxStateStore::load("assets/sandbox/initial.json");
     require(initializer.nodes.size() == 3, "initializer contains three sample nodes");
+    require(initializer.decks.empty(), "initializer starts with no collapsed decks");
     require(
         initializer.headId == 1 &&
             initializer.nodes.at(0).value == "A" &&
@@ -372,6 +373,18 @@ void testPersistsSandboxState() {
                 .paletteIndex = 1,
             },
         },
+        .decks = {
+            {
+                .leadId = 4,
+                .members = {
+                    {
+                        .id = 9,
+                        .originalX = 560.0f,
+                        .originalY = 780.0f,
+                    },
+                },
+            },
+        },
         .headId = 4,
         .currId = 9,
         .tempId = 4,
@@ -396,6 +409,14 @@ void testPersistsSandboxState() {
             loaded.nodes.at(1).value == expected.nodes.at(1).value &&
             !loaded.nodes.at(1).nextId,
         "sandbox persistence retains node model and view state");
+    require(
+        loaded.decks.size() == 1 &&
+            loaded.decks.at(0).leadId == 4 &&
+            loaded.decks.at(0).members.size() == 1 &&
+            loaded.decks.at(0).members.at(0).id == 9 &&
+            loaded.decks.at(0).members.at(0).originalX == 560.0f &&
+            loaded.decks.at(0).members.at(0).originalY == 780.0f,
+        "sandbox persistence retains deck state");
 }
 
 } // namespace

@@ -42,7 +42,7 @@ constexpr render::Rectangle INIT_BUTTON{
     34.0f,
 };
 constexpr float TOOLBOX_WIDTH = 255.0f;
-constexpr float TOOLBOX_HEIGHT = 405.0f;
+constexpr float TOOLBOX_HEIGHT = 488.0f;
 constexpr float TOOLBOX_X = WORKBENCH_X + WORKBENCH_WIDTH - TOOLBOX_WIDTH - 50.0f;
 constexpr float TOOLBOX_Y = WORKBENCH_Y + 120.0f;
 constexpr float TOOL_BUTTON_X = TOOLBOX_X + 34.0f;
@@ -65,6 +65,12 @@ constexpr render::Rectangle CURR_CLAMP_SLOT{
 constexpr render::Rectangle KEY_TOOL_SLOT{
     TOOL_BUTTON_X,
     TOOL_BUTTON_Y + (2.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
+    TOOL_BUTTON_WIDTH,
+    TOOL_BUTTON_HEIGHT,
+};
+constexpr render::Rectangle PAPERCLIP_TOOL_SLOT{
+    TOOL_BUTTON_X,
+    TOOL_BUTTON_Y + (3.0f * (TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP)),
     TOOL_BUTTON_WIDTH,
     TOOL_BUTTON_HEIGHT,
 };
@@ -106,6 +112,7 @@ constexpr float PI = 3.14159265358979323846f;
 constexpr float ADVANCE_FEEDBACK_DURATION = 0.5f;
 constexpr float SCISSORS_POINTER_HIT_RADIUS = 20.0f;
 constexpr float TAPE_DRAG_THRESHOLD = 8.0f;
+constexpr float DECK_OFFSET_STEP = 16.0f;
 
 constexpr bool isPointInsideRectangle(
     const render::Rectangle& rectangle,
@@ -153,6 +160,10 @@ Application::Application() {
         "assets/themes/test/tools/key_inactive.png");
     m_KeyActiveTexture = std::make_unique<TextureRenderer>(
         "assets/themes/test/tools/key_active.png");
+    m_PaperclipInactiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/paperclip_inactive.png");
+    m_PaperclipActiveTexture = std::make_unique<TextureRenderer>(
+        "assets/themes/test/tools/paperclip_active.png");
     std::error_code error;
     const bool hasSave = std::filesystem::exists(SANDBOX_SAVE_PATH, error);
     if (error) {
@@ -216,10 +227,22 @@ void Application::render() {
     m_Window->beginRender();
     drawWorkbench();
     drawExampleConnections(m_CorrectExample);
-    for (const NodeReference& reference : m_DrawOrder) {
+    const auto drawNode = [this](const NodeReference& reference) {
         const view::NodeViewState& node = findNodeVisual(reference.example->nodes, reference.id);
         drawNodeCard(*reference.example, node);
         drawNodeText(*reference.example, node);
+    };
+    for (const NodeReference& reference : m_DrawOrder) {
+        if (isDeckMember(reference)) {
+            continue;
+        }
+        if (const std::optional<std::size_t> deckIndex = deckIndexForLead(reference)) {
+            const DeckState& deck = m_Decks.at(*deckIndex);
+            for (auto member = deck.members.rbegin(); member != deck.members.rend(); ++member) {
+                drawNode({.example = deck.lead.example, .id = member->id});
+            }
+        }
+        drawNode(reference);
     }
     drawHeadIndicator(m_CorrectExample);
     drawClamp(CURR_CLAMP_CENTER_X, "curr", m_CurrNode);
@@ -280,6 +303,7 @@ void Application::updateInteraction() {
         m_HeldTool == HeldTool::Scissors) {
         if (const std::optional<NodeReference> scissorsTarget =
                 findScissorsTarget(mouse.x, mouse.y)) {
+            expandAllDecks();
             scissorsTarget->example->list.setNext(scissorsTarget->id, std::nullopt);
             saveSandbox();
         }
@@ -293,6 +317,7 @@ void Application::updateInteraction() {
                 };
             } else if (m_TapeDrag) {
                 if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
+                    expandAllDecks();
                     m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
                     saveSandbox();
                 }
@@ -312,6 +337,7 @@ void Application::updateInteraction() {
             m_TapeDrag && m_TapeDrag->isDragging &&
             Input::isMouseButtonJustReleased(GLFW_MOUSE_BUTTON_LEFT)) {
             if (const std::optional<NodeReference> target = findTapeTarget(mouse.x, mouse.y)) {
+                expandAllDecks();
                 m_TapeDrag->source.example->list.setNext(m_TapeDrag->source.id, target->id);
                 saveSandbox();
             }
@@ -319,9 +345,19 @@ void Application::updateInteraction() {
         }
     } else if (
         Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
+        m_HeldTool == HeldTool::Paperclip) {
+        if (const std::optional<NodeReference> lead = findTopmostCard(mouse.x, mouse.y)) {
+            toggleDeck(*lead);
+        }
+    } else if (
+        Input::isMouseButtonJustPressed(GLFW_MOUSE_BUTTON_LEFT) &&
         m_HeldTool == HeldTool::None) {
         const std::optional<NodeReference> hitNode = findTopmostCard(mouse.x, mouse.y);
         if (hitNode) {
+            if (const std::optional<std::size_t> deckIndex = deckIndexContaining(*hitNode)) {
+                expandDeck(*deckIndex);
+                saveSandbox();
+            }
             bringToFront(*hitNode);
             m_SelectedNode = *hitNode;
             view::NodeViewState& node = findNodeVisual(hitNode->example->nodes, hitNode->id);
@@ -532,6 +568,7 @@ void Application::drawToolbox() const {
     drawRectangle(TAPE_TOOL_SLOT, toolbox.button);
     drawRectangle(SCISSORS_TOOL_SLOT, toolbox.button);
     drawRectangle(KEY_TOOL_SLOT, toolbox.button);
+    drawRectangle(PAPERCLIP_TOOL_SLOT, toolbox.button);
     if (m_HeldTool != HeldTool::Tape) {
         m_TapeInactiveTexture->draw(
             TAPE_TOOL_SLOT.x + 6.0f,
@@ -572,6 +609,21 @@ void Application::drawToolbox() const {
             "TO nullptr",
             SCISSORS_TOOL_SLOT.x + 65.0f,
             TOOL_BUTTON_Y + TOOL_BUTTON_HEIGHT + TOOL_BUTTON_GAP + 44.0f,
+            toolbox.inactiveLabel.red,
+            toolbox.inactiveLabel.green,
+            toolbox.inactiveLabel.blue,
+            toolbox.inactiveLabel.alpha);
+    }
+    if (m_HeldTool != HeldTool::Paperclip) {
+        m_PaperclipInactiveTexture->draw(
+            PAPERCLIP_TOOL_SLOT.x + 6.0f,
+            PAPERCLIP_TOOL_SLOT.y + 6.0f,
+            TOOL_ICON_SIZE,
+            TOOL_ICON_SIZE);
+        m_RobotoMonoPointerTextRenderer->draw(
+            "CLIP",
+            PAPERCLIP_TOOL_SLOT.x + 74.0f,
+            PAPERCLIP_TOOL_SLOT.y + 44.0f,
             toolbox.inactiveLabel.red,
             toolbox.inactiveLabel.green,
             toolbox.inactiveLabel.blue,
@@ -879,7 +931,10 @@ void Application::drawHeldTool() const {
     const TextureRenderer& activeTexture =
         m_HeldTool == HeldTool::Tape
             ? *m_TapeActiveTexture
-            : (m_HeldTool == HeldTool::Scissors ? *m_ScissorsActiveTexture : *m_KeyActiveTexture);
+            : (m_HeldTool == HeldTool::Scissors
+                   ? *m_ScissorsActiveTexture
+                   : (m_HeldTool == HeldTool::Key ? *m_KeyActiveTexture
+                                                  : *m_PaperclipActiveTexture));
     activeTexture.draw(
         mouse.x - (HELD_TOOL_ICON_SIZE / 2.0f),
         mouse.y - (HELD_TOOL_ICON_SIZE / 2.0f),
@@ -1388,6 +1443,9 @@ std::optional<Application::HeldTool> Application::toolAt(float x, float y) const
     if (isPointInsideRectangle(KEY_TOOL_SLOT, x, y)) {
         return HeldTool::Key;
     }
+    if (isPointInsideRectangle(PAPERCLIP_TOOL_SLOT, x, y)) {
+        return HeldTool::Paperclip;
+    }
     return std::nullopt;
 }
 
@@ -1501,6 +1559,36 @@ bool Application::isNodeClamped(const NodeReference& node) const {
            (m_TempNode && m_TempNode->example == node.example && m_TempNode->id == node.id);
 }
 
+std::optional<std::size_t> Application::deckIndexForLead(const NodeReference& node) const {
+    for (std::size_t index = 0; index < m_Decks.size(); ++index) {
+        const DeckState& deck = m_Decks.at(index);
+        if (deck.lead.example == node.example && deck.lead.id == node.id) {
+            return index;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<std::size_t> Application::deckIndexContaining(const NodeReference& node) const {
+    if (const std::optional<std::size_t> leadIndex = deckIndexForLead(node)) {
+        return leadIndex;
+    }
+    for (std::size_t index = 0; index < m_Decks.size(); ++index) {
+        const DeckState& deck = m_Decks.at(index);
+        for (const DeckMember& member : deck.members) {
+            if (deck.lead.example == node.example && member.id == node.id) {
+                return index;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+bool Application::isDeckMember(const NodeReference& node) const {
+    const std::optional<std::size_t> deckIndex = deckIndexContaining(node);
+    return deckIndex && m_Decks.at(*deckIndex).lead.id != node.id;
+}
+
 bool Application::isScissorsTarget(const ListExample& example, model::NodeId id) const {
     return m_HoveredScissorsTarget && m_HoveredScissorsTarget->example == &example &&
            m_HoveredScissorsTarget->id == id;
@@ -1587,6 +1675,75 @@ void Application::spawnNodeAtClamp(ClampTarget target) {
     m_DrawOrder.push_back(node);
     attachedNode = node;
     saveSandbox();
+}
+
+void Application::toggleDeck(const NodeReference& lead) {
+    if (const std::optional<std::size_t> index = deckIndexForLead(lead)) {
+        expandDeck(*index);
+        saveSandbox();
+        return;
+    }
+    if (isDeckMember(lead)) {
+        return;
+    }
+
+    DeckState deck{
+        .lead = lead,
+    };
+    for (const model::NodeId downstreamId : lead.example->list.downstreamNodeIds(lead.id)) {
+        const NodeReference candidate{.example = lead.example, .id = downstreamId};
+        if (isExternallyReferenced(candidate)) {
+            break;
+        }
+        if (deckIndexForLead(candidate) || isDeckMember(candidate)) {
+            return;
+        }
+        const view::NodeViewState& visual = findNodeVisual(lead.example->nodes, downstreamId);
+        deck.members.push_back(
+            {
+                .id = downstreamId,
+                .originalX = visual.x,
+                .originalY = visual.y,
+            });
+    }
+    if (deck.members.empty()) {
+        return;
+    }
+
+    m_Decks.push_back(std::move(deck));
+    applyDeckLayout(m_Decks.back());
+    saveSandbox();
+}
+
+void Application::expandDeck(std::size_t index) {
+    if (index >= m_Decks.size()) {
+        throw std::out_of_range("Unknown deck");
+    }
+
+    const DeckState& deck = m_Decks.at(index);
+    for (const DeckMember& member : deck.members) {
+        view::NodeViewState& visual = findNodeVisual(deck.lead.example->nodes, member.id);
+        visual.x = member.originalX;
+        visual.y = member.originalY;
+    }
+    m_Decks.erase(m_Decks.begin() + static_cast<std::ptrdiff_t>(index));
+}
+
+void Application::expandAllDecks() {
+    while (!m_Decks.empty()) {
+        expandDeck(m_Decks.size() - 1);
+    }
+}
+
+void Application::applyDeckLayout(const DeckState& deck) {
+    const view::NodeViewState& leadVisual = findNodeVisual(deck.lead.example->nodes, deck.lead.id);
+    for (std::size_t index = 0; index < deck.members.size(); ++index) {
+        view::NodeViewState& visual =
+            findNodeVisual(deck.lead.example->nodes, deck.members.at(index).id);
+        const float offset = DECK_OFFSET_STEP * static_cast<float>(index + 1);
+        visual.x = leadVisual.x + offset;
+        visual.y = leadVisual.y - offset;
+    }
 }
 
 render::Rectangle Application::randomClampEjectionPosition(const render::Rectangle& slot) {
@@ -1703,6 +1860,7 @@ void Application::applySandboxState(const SandboxState& state) {
     m_TapeDrag.reset();
     m_HoveredTapeSource.reset();
     m_HoveredTapeTarget.reset();
+    m_Decks.clear();
     m_HeldTool = HeldTool::None;
     m_CurrAdvanceFeedback = AdvanceFeedback::None;
     m_TempAdvanceFeedback = AdvanceFeedback::None;
@@ -1748,6 +1906,24 @@ void Application::applySandboxState(const SandboxState& state) {
     };
     m_CurrNode = makeReference(state.currId);
     m_TempNode = makeReference(state.tempId);
+    for (const SandboxDeckState& deckState : state.decks) {
+        DeckState deck{
+            .lead = {
+                .example = &m_CorrectExample,
+                .id = resolveId(deckState.leadId),
+            },
+        };
+        for (const SandboxDeckMemberState& memberState : deckState.members) {
+            deck.members.push_back(
+                {
+                    .id = resolveId(memberState.id),
+                    .originalX = memberState.originalX,
+                    .originalY = memberState.originalY,
+                });
+        }
+        m_Decks.push_back(std::move(deck));
+        applyDeckLayout(m_Decks.back());
+    }
 
     if (!m_CorrectExample.list.isConsistent()) {
         throw std::logic_error("Loaded sandbox state is inconsistent");
@@ -1786,6 +1962,24 @@ SandboxState Application::sandboxState() const {
     };
     state.currId = persistedReferenceId(m_CurrNode);
     state.tempId = persistedReferenceId(m_TempNode);
+    state.decks.reserve(m_Decks.size());
+    for (const DeckState& deck : m_Decks) {
+        if (deck.lead.example != &m_CorrectExample) {
+            throw std::logic_error("Cannot save a deck from an unknown sandbox");
+        }
+        SandboxDeckState persistedDeck{
+            .leadId = deck.lead.id.value,
+        };
+        for (const DeckMember& member : deck.members) {
+            persistedDeck.members.push_back(
+                {
+                    .id = member.id.value,
+                    .originalX = member.originalX,
+                    .originalY = member.originalY,
+                });
+        }
+        state.decks.push_back(std::move(persistedDeck));
+    }
     return state;
 }
 

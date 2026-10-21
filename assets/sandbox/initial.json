@@ -4,6 +4,7 @@
     "curr": null,
     "temp": null
   },
+  "decks": [],
   "nodes": [
     {
       "id": 1,

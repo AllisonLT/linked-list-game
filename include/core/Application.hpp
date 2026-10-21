@@ -34,6 +34,7 @@ private:
         Tape,
         Scissors,
         Key,
+        Paperclip,
     };
 
     enum class AdvanceFeedback {
@@ -77,6 +78,17 @@ private:
         float pressX;
         float pressY;
         bool isDragging = false;
+    };
+
+    struct DeckMember {
+        model::NodeId id;
+        float originalX;
+        float originalY;
+    };
+
+    struct DeckState {
+        NodeReference lead;
+        std::vector<DeckMember> members;
     };
 
     void processInput();
@@ -137,6 +149,10 @@ private:
         std::optional<NodeReference>& attachedNode,
         const render::Rectangle& slot);
     void spawnNodeAtClamp(ClampTarget target);
+    void toggleDeck(const NodeReference& lead);
+    void expandDeck(std::size_t index);
+    void expandAllDecks();
+    void applyDeckLayout(const DeckState& deck);
     [[nodiscard]] render::Rectangle randomClampEjectionPosition(
         const render::Rectangle& slot);
     [[nodiscard]] std::optional<HeldTool> toolAt(float x, float y) const;
@@ -150,6 +166,9 @@ private:
     [[nodiscard]] std::optional<NodeReference> findTapeTarget(float x, float y) const;
     [[nodiscard]] bool isExternallyReferenced(const NodeReference& node) const;
     [[nodiscard]] bool isNodeClamped(const NodeReference& node) const;
+    [[nodiscard]] std::optional<std::size_t> deckIndexForLead(const NodeReference& node) const;
+    [[nodiscard]] std::optional<std::size_t> deckIndexContaining(const NodeReference& node) const;
+    [[nodiscard]] bool isDeckMember(const NodeReference& node) const;
     [[nodiscard]] bool isScissorsTarget(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeSource(const ListExample& example, model::NodeId id) const;
     [[nodiscard]] bool isTapeTarget(const ListExample& example, model::NodeId id) const;
@@ -184,6 +203,8 @@ private:
     std::unique_ptr<TextureRenderer> m_ScissorsActiveTexture;
     std::unique_ptr<TextureRenderer> m_KeyInactiveTexture;
     std::unique_ptr<TextureRenderer> m_KeyActiveTexture;
+    std::unique_ptr<TextureRenderer> m_PaperclipInactiveTexture;
+    std::unique_ptr<TextureRenderer> m_PaperclipActiveTexture;
     ListExample m_CorrectExample;
     std::vector<NodeReference> m_DrawOrder;
     std::optional<NodeReference> m_HoveredNode;
@@ -195,6 +216,7 @@ private:
     std::optional<TapeDragState> m_TapeDrag;
     std::optional<NodeReference> m_HoveredTapeSource;
     std::optional<NodeReference> m_HoveredTapeTarget;
+    std::vector<DeckState> m_Decks;
     HeldTool m_HeldTool = HeldTool::None;
     AdvanceFeedback m_CurrAdvanceFeedback = AdvanceFeedback::None;
     AdvanceFeedback m_TempAdvanceFeedback = AdvanceFeedback::None;

@@ -18,8 +18,20 @@ struct SandboxNodeState {
     std::size_t paletteIndex = 0;
 };
 
+struct SandboxDeckMemberState {
+    std::uint32_t id = 0;
+    float originalX = 0.0f;
+    float originalY = 0.0f;
+};
+
+struct SandboxDeckState {
+    std::uint32_t leadId = 0;
+    std::vector<SandboxDeckMemberState> members;
+};
+
 struct SandboxState {
     std::vector<SandboxNodeState> nodes;
+    std::vector<SandboxDeckState> decks;
     std::optional<std::uint32_t> headId;
     std::optional<std::uint32_t> currId;
     std::optional<std::uint32_t> tempId;
