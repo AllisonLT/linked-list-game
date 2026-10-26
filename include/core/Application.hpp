@@ -148,6 +148,7 @@ private:
     void attachDraggedNodeToClamp(
         std::optional<NodeReference>& attachedNode,
         const render::Rectangle& slot);
+    void deleteNode(const NodeReference& node);
     void spawnNodeAtClamp(ClampTarget target);
     void toggleDeck(const NodeReference& lead);
     void expandDeck(std::size_t index);

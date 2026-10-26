@@ -21,6 +21,16 @@ constexpr float WORKBENCH_WIDTH = Window::TARGET_WIDTH - (2.0f * WORKBENCH_X);
 constexpr float WORKBENCH_HEIGHT = (Window::TARGET_HEIGHT * 3.0f) / 5.0f;
 constexpr float DRAWER_Y = WORKBENCH_Y + WORKBENCH_HEIGHT;
 constexpr float DRAWER_HEIGHT = 50.0f;
+constexpr float RUBBISH_BIN_X = 1660.0f;
+constexpr float RUBBISH_BIN_Y = DRAWER_Y + DRAWER_HEIGHT + 34.0f;
+constexpr float RUBBISH_BIN_WIDTH = 150.0f;
+constexpr float RUBBISH_BIN_HEIGHT = 160.0f;
+constexpr render::Rectangle RUBBISH_BIN_DROP_AREA{
+    RUBBISH_BIN_X - 12.0f,
+    RUBBISH_BIN_Y - 12.0f,
+    RUBBISH_BIN_WIDTH + 24.0f,
+    RUBBISH_BIN_HEIGHT + 30.0f,
+};
 constexpr render::Rectangle HINT_DRAWER_HANDLE{
     1595.0f,
     DRAWER_Y + 20.0f,
@@ -418,12 +428,16 @@ void Application::updateInteraction() {
                 m_DragState->node.id);
             const float centerX = node.x + (render::NODE_CARD_WIDTH / 2.0f);
             const float centerY = node.y + (render::NODE_CARD_HEIGHT / 2.0f);
-            if (isPointInsideRectangle(CURR_CLAMP_SLOT, centerX, centerY)) {
-                attachDraggedNodeToClamp(m_CurrNode, CURR_CLAMP_SLOT);
-            } else if (isPointInsideRectangle(TEMP_CLAMP_SLOT, centerX, centerY)) {
-                attachDraggedNodeToClamp(m_TempNode, TEMP_CLAMP_SLOT);
+            if (isPointInsideRectangle(RUBBISH_BIN_DROP_AREA, centerX, centerY)) {
+                deleteNode(m_DragState->node);
+            } else {
+                if (isPointInsideRectangle(CURR_CLAMP_SLOT, centerX, centerY)) {
+                    attachDraggedNodeToClamp(m_CurrNode, CURR_CLAMP_SLOT);
+                } else if (isPointInsideRectangle(TEMP_CLAMP_SLOT, centerX, centerY)) {
+                    attachDraggedNodeToClamp(m_TempNode, TEMP_CLAMP_SLOT);
+                }
+                updateDeckOriginalPositions(*m_DragState);
             }
-            updateDeckOriginalPositions(*m_DragState);
             m_DragState.reset();
             saveSandbox();
         }
@@ -832,31 +846,29 @@ void Application::drawTemplateScroll() const {
 }
 
 void Application::drawRubbishBin() const {
-    constexpr float binX = 1660.0f;
-    constexpr float binY = DRAWER_Y + DRAWER_HEIGHT + 34.0f;
-    constexpr float binWidth = 150.0f;
-    constexpr float binHeight = 160.0f;
-
     drawRectangle(
-        {binX - 12.0f, binY, binWidth + 24.0f, 18.0f},
-        m_Theme->workbench.rubbishBin.lid);
-    drawRectangle({binX, binY + 18.0f, binWidth, binHeight}, m_Theme->workbench.rubbishBin.body);
-    drawRectangle(
-        {binX + 36.0f, binY - 12.0f, binWidth - 72.0f, 12.0f},
+        {RUBBISH_BIN_X - 12.0f, RUBBISH_BIN_Y, RUBBISH_BIN_WIDTH + 24.0f, 18.0f},
         m_Theme->workbench.rubbishBin.lid);
     drawRectangle(
-        {binX + 40.0f, binY + 38.0f, 10.0f, binHeight - 38.0f},
+        {RUBBISH_BIN_X, RUBBISH_BIN_Y + 18.0f, RUBBISH_BIN_WIDTH, RUBBISH_BIN_HEIGHT},
+        m_Theme->workbench.rubbishBin.body);
+    drawRectangle(
+        {RUBBISH_BIN_X + 36.0f, RUBBISH_BIN_Y - 12.0f, RUBBISH_BIN_WIDTH - 72.0f, 12.0f},
+        m_Theme->workbench.rubbishBin.lid);
+    drawRectangle(
+        {RUBBISH_BIN_X + 40.0f, RUBBISH_BIN_Y + 38.0f, 10.0f, RUBBISH_BIN_HEIGHT - 38.0f},
         m_Theme->workbench.rubbishBin.detail);
     drawRectangle(
-        {binX + 70.0f, binY + 38.0f, 10.0f, binHeight - 38.0f},
+        {RUBBISH_BIN_X + 70.0f, RUBBISH_BIN_Y + 38.0f, 10.0f, RUBBISH_BIN_HEIGHT - 38.0f},
         m_Theme->workbench.rubbishBin.detail);
     drawRectangle(
-        {binX + 100.0f, binY + 38.0f, 10.0f, binHeight - 38.0f},
+        {RUBBISH_BIN_X + 100.0f, RUBBISH_BIN_Y + 38.0f, 10.0f, RUBBISH_BIN_HEIGHT - 38.0f},
         m_Theme->workbench.rubbishBin.detail);
+    constexpr std::string_view label = "DELETE";
     m_RobotoMonoPointerTextRenderer->draw(
-        "BIN",
-        binX + 56.0f,
-        binY + binHeight + 46.0f,
+        label,
+        RUBBISH_BIN_X + (RUBBISH_BIN_WIDTH - m_RobotoMonoPointerTextRenderer->measureWidth(label)) / 2.0f,
+        RUBBISH_BIN_Y + RUBBISH_BIN_HEIGHT + 46.0f,
         m_Theme->workbench.rubbishBin.label.red,
         m_Theme->workbench.rubbishBin.label.green,
         m_Theme->workbench.rubbishBin.label.blue,
@@ -1641,6 +1653,37 @@ void Application::attachDraggedNodeToClamp(
         visual.y += snapDeltaY;
     }
     attachedNode = m_DragState->node;
+}
+
+void Application::deleteNode(const NodeReference& node) {
+    const auto matches = [&node](const NodeReference& candidate) {
+        return candidate.example == node.example && candidate.id == node.id;
+    };
+    const auto clearIfMatches = [&matches](std::optional<NodeReference>& candidate) {
+        if (candidate && matches(*candidate)) {
+            candidate.reset();
+        }
+    };
+
+    expandDeckContaining(node);
+    clearIfMatches(m_CurrNode);
+    clearIfMatches(m_TempNode);
+    clearIfMatches(m_HoveredNode);
+    clearIfMatches(m_SelectedNode);
+    clearIfMatches(m_HoveredScissorsTarget);
+    clearIfMatches(m_HoveredTapeSource);
+    clearIfMatches(m_HoveredTapeTarget);
+    if (m_TapeDrag && matches(m_TapeDrag->source)) {
+        m_TapeDrag.reset();
+    }
+
+    std::erase_if(m_DrawOrder, matches);
+    std::erase_if(
+        node.example->nodes,
+        [&node](const view::NodeViewState& visual) {
+            return visual.id == node.id;
+        });
+    node.example->list.eraseNode(node.id);
 }
 
 void Application::spawnNodeAtClamp(ClampTarget target) {
