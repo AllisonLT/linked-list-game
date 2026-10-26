@@ -162,6 +162,7 @@ private:
     [[nodiscard]] std::optional<ClampTarget> emptyClampSlotAt(float x, float y) const;
     [[nodiscard]] bool isInitButtonAt(float x, float y) const;
     [[nodiscard]] bool isInitButtonHovered() const;
+    [[nodiscard]] bool isRubbishBinDropTarget() const;
     [[nodiscard]] bool isKeyTargetHovered() const;
     [[nodiscard]] std::optional<NodeReference> findScissorsTarget(float x, float y) const;
     [[nodiscard]] std::optional<NodeReference> findTapeOutput(float x, float y) const;

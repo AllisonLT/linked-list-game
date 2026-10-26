@@ -428,7 +428,7 @@ void Application::updateInteraction() {
                 m_DragState->node.id);
             const float centerX = node.x + (render::NODE_CARD_WIDTH / 2.0f);
             const float centerY = node.y + (render::NODE_CARD_HEIGHT / 2.0f);
-            if (isPointInsideRectangle(RUBBISH_BIN_DROP_AREA, centerX, centerY)) {
+            if (isRubbishBinDropTarget()) {
                 deleteNode(m_DragState->node);
             } else {
                 if (isPointInsideRectangle(CURR_CLAMP_SLOT, centerX, centerY)) {
@@ -846,6 +846,16 @@ void Application::drawTemplateScroll() const {
 }
 
 void Application::drawRubbishBin() const {
+    if (isRubbishBinDropTarget()) {
+        drawRectangle(
+            {
+                RUBBISH_BIN_DROP_AREA.x - 8.0f,
+                RUBBISH_BIN_DROP_AREA.y - 8.0f,
+                RUBBISH_BIN_DROP_AREA.width + 16.0f,
+                RUBBISH_BIN_DROP_AREA.height + 16.0f,
+            },
+            m_Theme->workbench.toolbox.errorGlow);
+    }
     drawRectangle(
         {RUBBISH_BIN_X - 12.0f, RUBBISH_BIN_Y, RUBBISH_BIN_WIDTH + 24.0f, 18.0f},
         m_Theme->workbench.rubbishBin.lid);
@@ -1491,6 +1501,19 @@ bool Application::isInitButtonHovered() const {
 
     const glm::vec2 mouse = Input::getMousePosition();
     return isInitButtonAt(mouse.x, mouse.y);
+}
+
+bool Application::isRubbishBinDropTarget() const {
+    if (!m_DragState || m_HeldTool != HeldTool::None) {
+        return false;
+    }
+
+    const view::NodeViewState& draggedNode = findNodeVisual(
+        m_DragState->node.example->nodes,
+        m_DragState->node.id);
+    const float centerX = draggedNode.x + (render::NODE_CARD_WIDTH / 2.0f);
+    const float centerY = draggedNode.y + (render::NODE_CARD_HEIGHT / 2.0f);
+    return isPointInsideRectangle(RUBBISH_BIN_DROP_AREA, centerX, centerY);
 }
 
 bool Application::isKeyTargetHovered() const {
